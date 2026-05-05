@@ -12,8 +12,9 @@ module Tracker
     }.freeze
 
     def perform
-      active_bids = Bid.where(:status.in => %w[submitted viewed shortlisted])
-                       .select { |b| b.freelancer_bid_id.present? }
+      active_bids = Bid.where(:status.in => %w[submitted viewed shortlisted],
+                               :freelancer_bid_id.exists => true,
+                               :freelancer_bid_id.ne => "")
 
       return if active_bids.empty?
 
@@ -47,10 +48,7 @@ module Tracker
       return unless response.success?
 
       remote_bids = response.body.dig("result", "bids") || []
-      remote_bid  = remote_bids.find do |b|
-                      b["id"].to_s == bid.freelancer_bid_id ||
-                        b["id"].to_s == bid.freelancer_bid_id.gsub(/\D/, "")
-                    end
+      remote_bid  = remote_bids.find { |b| b["id"].to_s == bid.freelancer_bid_id }
       return unless remote_bid
 
       new_status = BID_AWARD_STATUS_MAP[remote_bid["award_status"]]

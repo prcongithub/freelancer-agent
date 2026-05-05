@@ -8,7 +8,7 @@ RSpec.describe Tracker::SyncStatusJob do
     end
     let!(:bid) do
       Bid.create!(project: project, amount: 1000, status: "submitted",
-                  submitted_at: Time.current, freelancer_bid_id: "b456")
+                  submitted_at: Time.current, freelancer_bid_id: "456")
     end
 
     it "updates bid and project status to shortlisted" do
