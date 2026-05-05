@@ -32,16 +32,16 @@ gem "mongoid", "~> 9.0"
 
 # Background jobs
 gem "sidekiq", "~> 7.0"
-gem "sidekiq-cron"
+gem "sidekiq-cron", "~> 1.12"
 
 # HTTP client (Freelancer API)
 gem "faraday", "~> 2.0"
 
 # Authentication
-gem "jwt"
+gem "jwt", "~> 2.8"
 
 # AI (proposal generation)
-gem "ruby-openai"
+gem "ruby-openai", "~> 7.0"
 
 # Environment
 gem "dotenv-rails"

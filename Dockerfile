@@ -7,6 +7,9 @@ WORKDIR /app
 COPY Gemfile Gemfile.lock ./
 RUN bundle install
 
+RUN useradd -m -u 1000 app && chown -R app:app /app
+USER app
+
 COPY . .
 
 EXPOSE 3000
