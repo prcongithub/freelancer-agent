@@ -23,6 +23,7 @@ export default function Bids() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Bid History</h1>
         <select
+          aria-label="Filter by status"
           value={filter}
           onChange={e => setFilter(e.target.value)}
           className="border rounded px-3 py-1.5 text-sm bg-white"
@@ -42,7 +43,7 @@ export default function Bids() {
             <thead className="bg-gray-50 border-b">
               <tr>
                 {['Project', 'Amount', 'Rate', 'Hours', 'Status', 'Submitted'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 font-medium text-gray-700">{h}</th>
+                  <th key={h} scope="col" className="text-left px-4 py-3 font-medium text-gray-700">{h}</th>
                 ))}
               </tr>
             </thead>

@@ -9,6 +9,8 @@ export default function Projects() {
   const [filter, setFilter]     = useState('');
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const load = (status: string) => {
     setLoading(true);
@@ -21,13 +23,29 @@ export default function Projects() {
   useEffect(() => { load(filter); }, [filter]);
 
   const handleApprove = async (projectId: string) => {
-    await approveBid(projectId);
-    load(filter);
+    setPendingAction(projectId);
+    setActionError(null);
+    try {
+      await approveBid(projectId);
+      load(filter);
+    } catch {
+      setActionError('Failed to approve bid. Please try again.');
+    } finally {
+      setPendingAction(null);
+    }
   };
 
   const handleReject = async (projectId: string) => {
-    await rejectProject(projectId);
-    load(filter);
+    setPendingAction(projectId);
+    setActionError(null);
+    try {
+      await rejectProject(projectId);
+      load(filter);
+    } catch {
+      setActionError('Failed to reject project. Please try again.');
+    } finally {
+      setPendingAction(null);
+    }
   };
 
   return (
@@ -35,17 +53,24 @@ export default function Projects() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Projects</h1>
         <select
+          aria-label="Filter by status"
           value={filter}
           onChange={e => setFilter(e.target.value)}
           className="border rounded px-3 py-1.5 text-sm bg-white"
         >
           {STATUSES.map(s => (
             <option key={s} value={s}>
-              {s ? s.replace('_', ' ') : 'All statuses'}
+              {s ? s.replace(/_/g, ' ') : 'All statuses'}
             </option>
           ))}
         </select>
       </div>
+
+      {actionError && (
+        <div className="mb-4 px-4 py-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+          {actionError}
+        </div>
+      )}
 
       {loading && <div className="text-center py-10 text-gray-500">Loading...</div>}
       {error   && <div className="text-center py-10 text-red-600">{error}</div>}
@@ -61,6 +86,7 @@ export default function Projects() {
                 project={project}
                 onApprove={handleApprove}
                 onReject={handleReject}
+                pendingAction={pendingAction}
               />
             ))
           )}
@@ -73,11 +99,13 @@ export default function Projects() {
 function ProjectCard({
   project,
   onApprove,
-  onReject
+  onReject,
+  pendingAction
 }: {
   project: Project;
   onApprove: (id: string) => void;
   onReject:  (id: string) => void;
+  pendingAction: string | null;
 }) {
   return (
     <div className="bg-white rounded-lg border p-4">
@@ -103,7 +131,7 @@ function ProjectCard({
               </span>
             )}
             {project.category && (
-              <span className="capitalize">{project.category.replace('_', ' ')}</span>
+              <span className="capitalize">{project.category.replace(/_/g, ' ')}</span>
             )}
             {project.fit_score && (
               <span>Score: <strong className="text-gray-700">{project.fit_score.total}</strong>/100</span>
@@ -113,19 +141,21 @@ function ProjectCard({
 
         <div className="flex flex-col items-end gap-2 shrink-0">
           <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${statusColor(project.status)}`}>
-            {project.status.replace('_', ' ')}
+            {project.status.replace(/_/g, ' ')}
           </span>
           {project.status === 'discovered' && (
             <div className="flex gap-2">
               <button
                 onClick={() => onApprove(project.id)}
-                className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                disabled={pendingAction === project.id}
+                className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Approve Bid
               </button>
               <button
                 onClick={() => onReject(project.id)}
-                className="px-3 py-1 bg-red-100 text-red-700 text-xs rounded hover:bg-red-200 transition-colors"
+                disabled={pendingAction === project.id}
+                className="px-3 py-1 bg-red-100 text-red-700 text-xs rounded hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Reject
               </button>

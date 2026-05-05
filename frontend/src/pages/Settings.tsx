@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fetchSettings, updateSettings } from '../api/client';
 import type { Settings } from '../types/api';
 
@@ -8,6 +8,7 @@ export default function SettingsPage() {
   const [saving, setSaving]     = useState(false);
   const [saved, setSaved]       = useState(false);
   const [error, setError]       = useState<string | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetchSettings()
@@ -16,15 +17,22 @@ export default function SettingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, []);
+
   const handleSave = async () => {
     if (!settings) return;
+    setError(null);
     setSaving(true);
     setSaved(false);
     try {
       const res = await updateSettings(settings);
       setSettings(res.data.settings);
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
     } catch {
       setError('Failed to save settings');
     } finally {
@@ -67,7 +75,7 @@ export default function SettingsPage() {
             {Object.entries(settings.pricing_floors).map(([category, rates]) => (
               <div key={category} className="flex items-center gap-3">
                 <span className="text-sm w-36 capitalize text-gray-700">
-                  {category.replace('_', ' ')}
+                  {category.replace(/_/g, ' ')}
                 </span>
                 <input
                   type="number"

@@ -31,7 +31,7 @@ export default function Dashboard() {
         <StatCard label="Discovered"  value={data.stats.total_discovered} />
         <StatCard label="Bids Sent"   value={data.stats.total_bids} />
         <StatCard label="Won"          value={data.stats.bids_won} />
-        <StatCard label="Win Rate"     value={`${data.stats.win_rate}%`} />
+        <StatCard label="Win Rate"     value={`${data.stats.win_rate.toFixed(1)}%`} />
       </div>
 
       {/* Pipeline */}
@@ -43,7 +43,7 @@ export default function Dashboard() {
               {data.pipeline[stage] ?? 0}
             </div>
             <div className="text-xs text-gray-500 capitalize mt-1">
-              {stage.replace('_', ' ')}
+              {stage.replace(/_/g, ' ')}
             </div>
           </div>
         ))}
@@ -59,7 +59,7 @@ export default function Dashboard() {
             <div key={project.id} className="flex items-center justify-between px-4 py-3">
               <div>
                 <div className="font-medium text-gray-900">{project.title}</div>
-                <div className="text-sm text-gray-500 capitalize">{project.category?.replace('_', ' ')}</div>
+                <div className="text-sm text-gray-500 capitalize">{project.category?.replace(/_/g, ' ')}</div>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-600">Score: {project.fit_score?.total ?? '—'}</span>
@@ -96,7 +96,7 @@ function StatusBadge({ status }: { status: string }) {
   const cls = colours[status] ?? 'bg-gray-100 text-gray-700';
   return (
     <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${cls}`}>
-      {status.replace('_', ' ')}
+      {status.replace(/_/g, ' ')}
     </span>
   );
 }
