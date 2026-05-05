@@ -10,7 +10,7 @@ module Api
         setting.update!(setting_params)
         render json: { settings: serialize_settings(setting) }
       rescue Mongoid::Errors::Validations => e
-        render json: { error: e.message }, status: :unprocessable_entity
+        render json: { error: e.message }, status: :unprocessable_content
       end
 
       private

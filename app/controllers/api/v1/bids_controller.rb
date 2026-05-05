@@ -2,7 +2,7 @@ module Api
   module V1
     class BidsController < ApplicationController
       def index
-        bids = Bid.all.order(submitted_at: :desc)
+        bids = Bid.all.includes(:project).order(submitted_at: :desc)
         bids = bids.where(status: params[:status]) if params[:status].present?
 
         render json: { bids: bids.map { |b| serialize_bid(b) } }

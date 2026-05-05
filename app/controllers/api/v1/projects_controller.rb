@@ -17,25 +17,34 @@ module Api
       end
 
       def approve_bid
-        project = Project.find(params[:id])
+        # Atomic: only update if status is currently "discovered"
+        # update_all returns a Mongo::Operation::Update::Result; use .n for matched count
+        result = Project.where(id: params[:id], status: "discovered")
+                        .update_all("$set" => { status: "bid_sent", bid_at: Time.current.utc })
 
-        unless project.status == "discovered"
-          render json: { error: "Project must be in discovered state" }, status: :unprocessable_entity
+        if result.n == 0
+          # Either not found or not in discovered state
+          project = Project.find(params[:id]) rescue nil
+          if project.nil?
+            render json: { error: "Project not found" }, status: :not_found
+          else
+            render json: { error: "Project must be in discovered state" }, status: :unprocessable_content
+          end
           return
         end
 
-        Bidder::SubmitBidJob.perform_async(project.id.to_s)
+        Bidder::SubmitBidJob.perform_async(params[:id].to_s)
         render json: { message: "Bid submission queued" }
-      rescue Mongoid::Errors::DocumentNotFound
-        render json: { error: "Project not found" }, status: :not_found
       end
 
       def reject
+        result = Project.where(id: params[:id]).update_all("$set" => { status: "lost" })
+        if result.n == 0
+          render json: { error: "Project not found" }, status: :not_found
+          return
+        end
         project = Project.find(params[:id])
-        project.update!(status: "lost")
         render json: { project: serialize_project(project) }
-      rescue Mongoid::Errors::DocumentNotFound
-        render json: { error: "Project not found" }, status: :not_found
       end
 
       private
