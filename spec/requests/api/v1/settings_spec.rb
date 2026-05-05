@@ -29,7 +29,7 @@ RSpec.describe "Api::V1::Settings", type: :request do
     it "returns error for invalid threshold values" do
       patch "/api/v1/settings", params: { auto_bid_threshold: 150 }
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 end

@@ -43,7 +43,7 @@ RSpec.describe "Api::V1::Projects", type: :request do
 
       post "/api/v1/projects/#{project.id}/approve_bid"
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 
