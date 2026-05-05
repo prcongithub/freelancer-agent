@@ -1,0 +1,6 @@
+:queues:
+  - [critical, 5]
+  - [scanning, 3]
+  - [bidding, 3]
+  - [default, 2]
+  - [low, 1]
