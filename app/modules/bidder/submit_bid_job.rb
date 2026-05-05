@@ -7,6 +7,14 @@ module Bidder
       project = Project.find(project_id)
       return unless project.status == "discovered"
 
+      # Idempotency: don't create a second bid if one already exists for this project
+      existing_bid = Bid.where(project_id: project.id).first
+      if existing_bid
+        # If bid exists but project wasn't updated, try to finish the job
+        project.update!(status: "bid_sent", bid_at: Time.current) if project.status == "discovered"
+        return
+      end
+
       pricing_engine     = PricingEngine.new
       proposal_generator = ProposalGenerator.new
 
@@ -57,12 +65,16 @@ module Bidder
         }
       end
 
-      if response.success?
-        bid_id = response.body.dig("result", "id")
-        bid.update!(freelancer_bid_id: bid_id.to_s) if bid_id
+      unless response.success?
+        Rails.logger.error("SubmitBidJob: Freelancer API error #{response.status}: #{response.body}")
+        raise "Freelancer API submission failed with status #{response.status}"
       end
+
+      bid_id = response.body.dig("result", "id")
+      bid.update!(freelancer_bid_id: bid_id.to_s) if bid_id
     rescue Faraday::ConnectionFailed, Faraday::TimeoutError => e
-      Rails.logger.error("SubmitBidJob#submit_to_freelancer failed: #{e.message}")
+      Rails.logger.error("SubmitBidJob#submit_to_freelancer network error: #{e.message}")
+      raise  # re-raise so Sidekiq retries
     end
   end
 end

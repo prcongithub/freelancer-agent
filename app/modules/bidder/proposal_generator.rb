@@ -19,9 +19,12 @@ module Bidder
       )
 
       response.dig("choices", 0, "message", "content") || fallback_proposal(project)
-    rescue => e
-      Rails.logger.error("ProposalGenerator#generate failed: #{e.message}")
+    rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Faraday::Error => e
+      Rails.logger.error("ProposalGenerator#generate network error: #{e.message}")
       fallback_proposal(project)
+    rescue => e
+      Rails.logger.error("ProposalGenerator#generate unexpected error: #{e.class}: #{e.message}")
+      raise  # Don't swallow programming errors
     end
 
     private
