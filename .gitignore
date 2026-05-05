@@ -32,3 +32,9 @@
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
+# Ignore vendor bundle (gems installed locally due to permission restrictions)
+/vendor/bundle
+
+# Ignore Kamal secrets (contains master key reference, not for git)
+/.kamal/secrets
+
