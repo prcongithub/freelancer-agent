@@ -1,0 +1,47 @@
+FROM ruby:3.4-slim-bookworm AS base
+
+RUN apt-get update -qq && \
+    apt-get install -y build-essential libcurl4-openssl-dev git curl && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Stage: gems
+FROM base AS gems
+
+COPY Gemfile Gemfile.lock ./
+
+# Install gems into /app/vendor/bundle so they land inside WORKDIR
+# and will be covered by the later chown to app user
+ENV BUNDLE_PATH=/app/vendor/bundle
+ENV BUNDLE_WITHOUT="development test"
+RUN bundle install
+
+# Stage: production
+FROM base AS production
+
+# Create non-root user
+RUN useradd -m -u 1000 app
+
+WORKDIR /app
+
+# Copy gems from build stage (already in /app/vendor/bundle)
+COPY --from=gems /app/vendor /app/vendor
+
+# Copy application code
+COPY . .
+
+# Set bundle config so Rails knows where gems are
+ENV BUNDLE_PATH=/app/vendor/bundle
+ENV BUNDLE_WITHOUT="development test"
+ENV RAILS_ENV=production
+ENV RAILS_LOG_TO_STDOUT=true
+ENV RAILS_SERVE_STATIC_FILES=false
+
+# Own everything as app user
+RUN chown -R app:app /app
+
+USER app
+
+EXPOSE 3000
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]

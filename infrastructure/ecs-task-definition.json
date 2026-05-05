@@ -1,0 +1,47 @@
+{
+  "family": "freelancing-agent",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "${EXECUTION_ROLE_ARN}",
+  "taskRoleArn": "${TASK_ROLE_ARN}",
+  "containerDefinitions": [
+    {
+      "name": "rails-api",
+      "image": "${ECR_IMAGE}:latest",
+      "portMappings": [
+        { "containerPort": 3000, "protocol": "tcp" }
+      ],
+      "command": ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"],
+      "environment": [
+        { "name": "RAILS_ENV", "value": "production" },
+        { "name": "RAILS_LOG_TO_STDOUT", "value": "true" },
+        { "name": "RAILS_SERVE_STATIC_FILES", "value": "false" }
+      ],
+      "secrets": [
+        { "name": "MONGODB_URI", "valueFrom": "${SECRETS_ARN}:MONGODB_URI::" },
+        { "name": "REDIS_URL", "valueFrom": "${SECRETS_ARN}:REDIS_URL::" },
+        { "name": "FREELANCER_API_TOKEN", "valueFrom": "${SECRETS_ARN}:FREELANCER_API_TOKEN::" },
+        { "name": "FREELANCER_API_BASE_URL", "valueFrom": "${SECRETS_ARN}:FREELANCER_API_BASE_URL::" },
+        { "name": "OPENAI_API_KEY", "valueFrom": "${SECRETS_ARN}:OPENAI_API_KEY::" },
+        { "name": "JWT_SECRET", "valueFrom": "${SECRETS_ARN}:JWT_SECRET::" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/freelancing-agent",
+          "awslogs-region": "${AWS_REGION}",
+          "awslogs-stream-prefix": "api"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}
