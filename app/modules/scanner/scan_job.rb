@@ -19,26 +19,35 @@ module Scanner
         projects = client.search_projects(keywords: keywords)
 
         projects.each do |project_data|
-          next if Project.where(freelancer_id: project_data[:freelancer_id]).exists?
-
           score = scorer.score(project_data)
           category = scorer.categorize(project_data)
 
-          threshold = defined?(Setting) ? (Setting.threshold rescue 60) : 60
+          threshold = 60
+          threshold = Setting.threshold if defined?(Setting) && Setting.respond_to?(:threshold)
           next if score[:total] < threshold
 
-          Project.create!(
-            freelancer_id: project_data[:freelancer_id],
-            title: project_data[:title],
-            description: project_data[:description],
-            budget_range: project_data[:budget_range],
-            skills_required: project_data[:skills_required],
-            client: project_data[:client],
-            fit_score: score,
-            category: category,
-            status: "discovered",
-            discovered_at: Time.current
-          )
+          begin
+            Project.create!(
+              freelancer_id: project_data[:freelancer_id],
+              title: project_data[:title],
+              description: project_data[:description],
+              budget_range: project_data[:budget_range],
+              skills_required: project_data[:skills_required],
+              client: project_data[:client],
+              fit_score: score,
+              category: category,
+              status: "discovered",
+              discovered_at: Time.current
+            )
+          rescue Mongoid::Errors::Validations => e
+            # Skip duplicates (uniqueness validation catches them)
+            next if e.document.errors[:freelancer_id].any?
+            raise
+          rescue Mongo::Error::OperationFailure => e
+            # Skip if duplicate key error from unique index
+            next if e.message.include?("11000")
+            raise
+          end
         end
       end
     end

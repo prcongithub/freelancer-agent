@@ -20,9 +20,11 @@ module Scanner
       end
 
       return [] unless response.success?
-
       projects = response.body.dig("result", "projects") || []
       projects.map { |p| normalize_project(p) }
+    rescue Faraday::ConnectionFailed, Faraday::TimeoutError => e
+      Rails.logger.error("FreelancerClient#search_projects failed: #{e.message}")
+      []
     end
 
     def get_project_details(project_id)
@@ -33,13 +35,16 @@ module Scanner
       end
 
       return nil unless response.success?
-
       normalize_project(response.body.dig("result"))
+    rescue Faraday::ConnectionFailed, Faraday::TimeoutError => e
+      Rails.logger.error("FreelancerClient#get_project_details failed: #{e.message}")
+      nil
     end
 
     private
 
     def normalize_project(p)
+      owner = p["owner_details"] || {}
       {
         freelancer_id: p["id"].to_s,
         title: p["title"],
@@ -50,7 +55,11 @@ module Scanner
           currency: p.dig("currency", "code") || "USD"
         },
         skills_required: (p["jobs"] || []).map { |j| j["name"] },
-        client: { id: p["owner_id"].to_s },
+        client: {
+          id: p["owner_id"].to_s,
+          rating: owner.dig("reputation", "entire_history", "overall")&.to_f,
+          payment_verified: owner.dig("status", "payment_verified") || false
+        },
         time_submitted: p["time_submitted"]
       }
     end

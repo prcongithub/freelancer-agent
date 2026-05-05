@@ -8,14 +8,6 @@ module Scanner
       fullstack: ["full stack", "fullstack", "web application", "saas", "webapp"]
     }.freeze
 
-    CATEGORY_FLOORS = {
-      aws_devops: { min: 75, max: 100 },
-      backend: { min: 60, max: 80 },
-      frontend: { min: 40, max: 60 },
-      ai_automation: { min: 100, max: 120 },
-      fullstack: { min: 60, max: 80 }
-    }.freeze
-
     def score(project)
       skill_match = score_skill_match(project)
       budget = score_budget(project)
