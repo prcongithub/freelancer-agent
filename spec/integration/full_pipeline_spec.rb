@@ -65,7 +65,7 @@ RSpec.describe "Full Pipeline Integration", type: :request do
     it "project appears in GET /api/v1/projects" do
       Scanner::ScanJob.new.perform
 
-      get "/api/v1/projects"
+      get "/api/v1/projects", headers: freelancer_headers
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
@@ -77,11 +77,11 @@ RSpec.describe "Full Pipeline Integration", type: :request do
     it "project is filterable by status in GET /api/v1/projects" do
       Scanner::ScanJob.new.perform
 
-      get "/api/v1/projects", params: { status: "bid_sent" }
+      get "/api/v1/projects", params: { status: "bid_sent" }, headers: freelancer_headers
       json = JSON.parse(response.body)
       expect(json["projects"]).to be_empty
 
-      get "/api/v1/projects", params: { status: "discovered" }
+      get "/api/v1/projects", params: { status: "discovered" }, headers: freelancer_headers
       json = JSON.parse(response.body)
       expect(json["projects"].length).to eq(1)
     end
@@ -89,7 +89,7 @@ RSpec.describe "Full Pipeline Integration", type: :request do
     it "dashboard pipeline counts reflect the discovered project" do
       Scanner::ScanJob.new.perform
 
-      get "/api/v1/dashboard"
+      get "/api/v1/dashboard", headers: freelancer_headers
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
