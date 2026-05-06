@@ -2,6 +2,19 @@ module Api
   module V1
     module Auth
       class SessionsController < ApplicationController
+        skip_before_action :authenticate_user!, only: [:create]
+
+        # POST /api/v1/auth/sessions — password login (super_admin only)
+        def create
+          user = User.where(provider: "local", email: params[:email].to_s.downcase.strip).first
+          if user&.authenticate(params[:password])
+            token = ::Auth::TokenService.encode(user_id: user.id.to_s, role: user.role)
+            render json: { token: token, role: user.role, name: user.name }
+          else
+            render json: { error: "Invalid email or password" }, status: :unauthorized
+          end
+        end
+
         def me
           user = current_user
           fresh_token = ::Auth::TokenService.encode(user_id: user.id.to_s, role: user.role)

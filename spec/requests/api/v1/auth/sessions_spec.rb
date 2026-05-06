@@ -22,3 +22,55 @@ RSpec.describe "Api::V1::Auth::Sessions", type: :request do
     end
   end
 end
+
+RSpec.describe "POST /api/v1/auth/sessions", type: :request do
+  let!(:admin) do
+    User.create!(
+      provider:     "local",
+      provider_uid: "admin@prolanceai.com",
+      role:         "super_admin",
+      name:         "Admin",
+      email:        "admin@prolanceai.com",
+      password:     "securepass123"
+    )
+  end
+
+  context "with valid credentials" do
+    it "returns a JWT token and user info" do
+      post "/api/v1/auth/sessions", params: { email: "admin@prolanceai.com", password: "securepass123" }, as: :json
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json["token"]).to be_present
+      expect(json["role"]).to eq("super_admin")
+      payload = Auth::TokenService.decode(json["token"])
+      expect(payload["role"]).to eq("super_admin")
+    end
+  end
+
+  context "with wrong password" do
+    it "returns 401" do
+      post "/api/v1/auth/sessions", params: { email: "admin@prolanceai.com", password: "wrongpass" }, as: :json
+      expect(response).to have_http_status(:unauthorized)
+      expect(JSON.parse(response.body)["error"]).to eq("Invalid email or password")
+    end
+  end
+
+  context "with unknown email" do
+    it "returns 401" do
+      post "/api/v1/auth/sessions", params: { email: "nobody@example.com", password: "anything" }, as: :json
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
+  context "with non-local user email" do
+    it "returns 401 (OAuth users cannot use password login)" do
+      User.create!(
+        provider: "freelancer", provider_uid: "fl_123",
+        role: "freelancer", name: "Jane", email: "jane@example.com",
+        oauth_token: "tok"
+      )
+      post "/api/v1/auth/sessions", params: { email: "jane@example.com", password: "anything" }, as: :json
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+end

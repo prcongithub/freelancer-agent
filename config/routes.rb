@@ -8,6 +8,7 @@ Rails.application.routes.draw do
         get  "freelancer/authorize", to: "freelancer#authorize"
         get  "freelancer/callback",  to: "freelancer#callback"
         get  "me",                   to: "sessions#me"
+        post "sessions",             to: "sessions#create"
       end
 
       resources :projects, only: [:index, :show] do

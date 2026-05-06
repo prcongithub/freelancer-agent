@@ -34,4 +34,36 @@ RSpec.describe User, type: :model do
     user = User.new(provider: "freelancer", provider_uid: "1", role: "freelancer", oauth_token: "tok")
     expect(user).not_to be_valid
   end
+
+  describe "local (super_admin) user" do
+    subject(:user) do
+      User.new(
+        provider:     "local",
+        provider_uid: "admin@example.com",
+        role:         "super_admin",
+        name:         "Admin",
+        email:        "admin@example.com",
+        password:     "securepass123"
+      )
+    end
+
+    it "is valid with email and password" do
+      expect(user).to be_valid
+    end
+
+    it "authenticates with correct password" do
+      user.save!
+      expect(user.authenticate("securepass123")).to eq(user)
+    end
+
+    it "rejects wrong password" do
+      user.save!
+      expect(user.authenticate("wrongpass")).to be_falsey
+    end
+
+    it "is invalid without password on create" do
+      user.password = nil
+      expect(user).not_to be_valid
+    end
+  end
 end
