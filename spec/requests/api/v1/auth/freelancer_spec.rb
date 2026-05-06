@@ -7,7 +7,7 @@ RSpec.describe "Api::V1::Auth::Freelancer", type: :request do
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
-      expect(json["url"]).to include("accounts.freelancer.com")
+      expect(json["url"]).to include("www.freelancer.com")
     end
 
     it "defaults to freelancer role if role not provided" do

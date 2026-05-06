@@ -5,7 +5,7 @@ RSpec.describe Auth::FreelancerOAuth do
   describe ".authorize_url" do
     it "returns a Freelancer OAuth URL with role encoded in state" do
       url = described_class.authorize_url(role: "client")
-      expect(url).to include("accounts.freelancer.com")
+      expect(url).to include("www.freelancer.com")
       expect(url).to include("response_type=code")
       expect(url).to include("state=")
       expect(url).to include("scope=")
