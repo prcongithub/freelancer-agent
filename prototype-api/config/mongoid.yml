@@ -1,0 +1,13 @@
+development:
+  clients:
+    default:
+      uri: <%= ENV.fetch('MONGODB_URI', 'mongodb://localhost:27017/freelancing_prototypes') %>
+      options:
+        server_selection_timeout: 5
+
+production:
+  clients:
+    default:
+      uri: <%= ENV.fetch('MONGODB_URI') %>
+      options:
+        server_selection_timeout: 5

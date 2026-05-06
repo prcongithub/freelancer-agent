@@ -1,0 +1,2 @@
+[dotenv] Set [36mMONGODB_URI[0m, [36mPROTO_JWT_SECRET[0m, [36mAWS_REGION[0m, [36mAWS_ACCESS_KEY_ID[0m, [36mAWS_SECRET_ACCESS_KEY[0m, [36mS3_PROTOTYPE_BUCKET[0m
+[dotenv] Loaded [33m.env[0m

@@ -1,0 +1,19 @@
+source "https://rubygems.org"
+ruby File.read(".ruby-version").strip rescue "3.4.0"
+
+gem "rails", "~> 8.1.1"
+gem "puma", ">= 5.0"
+gem "rack-cors"
+
+# MongoDB
+gem "mongoid", "~> 9.0"
+
+# Auth
+gem "jwt", "~> 2.8"
+gem "bcrypt", "~> 3.1.7"
+
+# AWS S3 (file uploads)
+gem "aws-sdk-s3"
+
+# Env
+gem "dotenv-rails"
