@@ -35,7 +35,7 @@ gem "sidekiq-cron", "~> 1.12"
 gem "faraday", "~> 2.0"
 
 # Authentication
-gem "jwt", "~> 2.8"
+gem "jwt", "~> 3.1"
 gem "bcrypt", "~> 3.1.7"
 
 # AI (proposal generation)
