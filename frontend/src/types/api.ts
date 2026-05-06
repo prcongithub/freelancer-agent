@@ -180,3 +180,15 @@ export interface AdminStats {
   projects: { total: number; by_status: Record<string, number> };
   analyses: { total: number };
 }
+
+export interface Prototype {
+  id: string;
+  project_id: string;
+  proto_id: string;
+  status: 'generating' | 'ready' | 'failed' | 'approved' | 'rejected';
+  public_url?: string;
+  approved: boolean;
+  generated_at?: string;
+  approved_at?: string;
+  created_at?: string;
+}
