@@ -3,11 +3,12 @@ class AuthController < ApplicationController
 
   # POST /:proto_id/auth/register
   def register
-    col   = mongo_collection("#{params[:proto_id]}_users")
+    col   = mongo_collection(collection_name(params[:proto_id], "users"))
     email = params[:email].to_s.downcase.strip
 
     render json: { error: "Email required" }, status: :bad_request and return if email.blank?
     render json: { error: "Password required" }, status: :bad_request and return if params[:password].blank?
+    render json: { error: "Password too long" }, status: :bad_request and return if params[:password].length > 72
     render json: { error: "Email already taken" }, status: :conflict and return if col.find(email: email).first
 
     hashed = BCrypt::Password.create(params[:password])
@@ -21,7 +22,7 @@ class AuthController < ApplicationController
 
   # POST /:proto_id/auth/login
   def login
-    col   = mongo_collection("#{params[:proto_id]}_users")
+    col   = mongo_collection(collection_name(params[:proto_id], "users"))
     email = params[:email].to_s.downcase.strip
     user  = col.find(email: email).first
 
@@ -35,7 +36,7 @@ class AuthController < ApplicationController
 
   # GET /:proto_id/auth/me
   def me
-    render json: { user: @current_user }
+    render json: { user: { id: @current_user["_id"].to_s, email: @current_user["email"] } }
   end
 
   private
@@ -58,10 +59,10 @@ class AuthController < ApplicationController
       render json: { error: "Token proto_id mismatch" }, status: :unauthorized and return
     end
 
-    col   = mongo_collection("#{params[:proto_id]}_users")
+    col   = mongo_collection(collection_name(params[:proto_id], "users"))
     @current_user = col.find("_id" => BSON::ObjectId(payload["user_id"])).first
     render json: { error: "User not found" }, status: :unauthorized and return unless @current_user
-  rescue JWT::DecodeError
+  rescue JWT::DecodeError, KeyError
     render json: { error: "Invalid token" }, status: :unauthorized
   end
 end
