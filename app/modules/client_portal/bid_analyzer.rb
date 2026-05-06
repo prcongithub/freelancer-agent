@@ -1,11 +1,11 @@
 module ClientPortal
   class BidAnalyzer
-    DEFAULT_MODEL = "global.anthropic.claude-haiku-4-5-20251001-v1:0".freeze
+    include BedrockCaller
 
     def analyze(project:, bids:)
       return nil if bids.empty?
       prompt = build_prompt(project, bids)
-      text   = call_bedrock(prompt)
+      text   = call_bedrock(prompt, max_tokens: 2048)
       parse_response(text)
     rescue Aws::BedrockRuntime::Errors::ServiceError => e
       Rails.logger.error("ClientPortal::BidAnalyzer Bedrock error: #{e.class}: #{e.message}")
@@ -66,20 +66,6 @@ module ClientPortal
         Rank by: proposal quality and specificity, bidder rating, value for money,
         payment verification, realistic delivery time.
       PROMPT
-    end
-
-    def call_bedrock(prompt)
-      client = Aws::BedrockRuntime::Client.new(
-        region:            ENV.fetch("AWS_BEDROCK_REGION", "us-east-1"),
-        access_key_id:     ENV.fetch("AWS_BEDROCK_ACCESS_KEY_ID"),
-        secret_access_key: ENV.fetch("AWS_BEDROCK_SECRET_ACCESS_KEY")
-      )
-      response = client.converse(
-        model_id: ENV.fetch("BEDROCK_MODEL_ID", DEFAULT_MODEL),
-        messages: [{ role: "user", content: [{ text: prompt }] }],
-        inference_config: { max_tokens: 2048, temperature: 0.3 }
-      )
-      response.output.message.content.first.text
     end
 
     def parse_response(text)
