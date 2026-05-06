@@ -52,5 +52,10 @@ RSpec.describe "Api::V1::Client::Projects", type: :request do
       post "/api/v1/client/projects/99/analyze_bids", headers: headers
       expect(response).to have_http_status(:not_found)
     end
+
+    it "returns 401 without auth on analyze_bids" do
+      post "/api/v1/client/projects/42/analyze_bids"
+      expect(response).to have_http_status(:unauthorized)
+    end
   end
 end

@@ -36,7 +36,7 @@ Rails.application.routes.draw do
       get       :dashboard, to: "dashboard#index"
 
       namespace :client do
-        resources :projects, only: [:index, :show] do
+        resources :projects, only: [:index] do
           member do
             post :analyze_bids
           end

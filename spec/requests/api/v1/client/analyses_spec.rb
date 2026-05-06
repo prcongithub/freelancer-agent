@@ -43,5 +43,10 @@ RSpec.describe "Api::V1::Client::Analyses", type: :request do
       get "/api/v1/client/analyses/#{ca.id}", headers: freelancer_headers
       expect(response).to have_http_status(:forbidden)
     end
+
+    it "returns 401 without auth" do
+      get "/api/v1/client/analyses/some_id"
+      expect(response).to have_http_status(:unauthorized)
+    end
   end
 end

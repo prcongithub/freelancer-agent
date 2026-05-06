@@ -46,6 +46,7 @@ RSpec.describe ClientPortal::AnalyzeBidsJob do
   end
 
   it "logs and skips on unknown user" do
+    expect(Rails.logger).to receive(:warn).with(/nonexistent_id/)
     expect {
       described_class.new.perform("nonexistent_id", project_info)
     }.not_to raise_error

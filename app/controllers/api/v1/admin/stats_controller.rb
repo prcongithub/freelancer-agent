@@ -14,7 +14,12 @@ module Api
               },
               projects: {
                 total:     Project.count,
-                by_status: Project::STATUSES.index_with { |s| Project.where(status: s).count }
+                by_status: begin
+                  status_counts = Project.collection.aggregate([
+                    { "$group" => { "_id" => "$status", "count" => { "$sum" => 1 } } }
+                  ]).to_a.each_with_object({}) { |doc, h| h[doc["_id"]] = doc["count"] }
+                  Project::STATUSES.index_with { |s| status_counts[s] || 0 }
+                end
               },
               analyses: {
                 total: ClientAnalysis.count
