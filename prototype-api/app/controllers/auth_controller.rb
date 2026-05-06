@@ -41,7 +41,7 @@ class AuthController < ApplicationController
   private
 
   def encode_token(proto_id, user_id, email)
-    secret = ENV.fetch("PROTO_JWT_SECRET", "fallback_secret")
+    secret = ENV.fetch("PROTO_JWT_SECRET")
     JWT.encode({ proto_id: proto_id, user_id: user_id, email: email, exp: 30.days.from_now.to_i },
                secret, "HS256")
   end
@@ -51,7 +51,7 @@ class AuthController < ApplicationController
     token  = header&.split(" ")&.last
     render json: { error: "Unauthorized" }, status: :unauthorized and return unless token
 
-    secret  = ENV.fetch("PROTO_JWT_SECRET", "fallback_secret")
+    secret  = ENV.fetch("PROTO_JWT_SECRET")
     payload = JWT.decode(token, secret, true, algorithms: ["HS256"]).first
 
     unless payload["proto_id"] == params[:proto_id]
@@ -60,7 +60,7 @@ class AuthController < ApplicationController
 
     col   = mongo_collection("#{params[:proto_id]}_users")
     @current_user = col.find("_id" => BSON::ObjectId(payload["user_id"])).first
-    render json: { error: "User not found" }, status: :unauthorized unless @current_user
+    render json: { error: "User not found" }, status: :unauthorized and return unless @current_user
   rescue JWT::DecodeError
     render json: { error: "Invalid token" }, status: :unauthorized
   end
