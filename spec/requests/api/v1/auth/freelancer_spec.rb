@@ -13,7 +13,9 @@ RSpec.describe "Api::V1::Auth::Freelancer", type: :request do
     it "defaults to freelancer role if role not provided" do
       get "/api/v1/auth/freelancer/authorize"
       json = JSON.parse(response.body)
-      expect(json["url"]).to include("state=")
+      state = URI.decode_www_form(URI.parse(json["url"]).query).to_h["state"]
+      payload = Auth::TokenService.decode(state)
+      expect(payload["role"]).to eq("freelancer")
     end
   end
 
@@ -51,6 +53,8 @@ RSpec.describe "Api::V1::Auth::Freelancer", type: :request do
       expect {
         get "/api/v1/auth/freelancer/callback", params: { code: "authcode", state: state }
       }.not_to change(User, :count)
+
+      expect(User.find_by(provider_uid: "99").oauth_token).to eq("tok123")
     end
   end
 end

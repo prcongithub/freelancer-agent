@@ -21,6 +21,9 @@ module Api
             provider_uid: result[:user_info]["id"].to_s
           )
 
+          # Only set profile fields on first login. On re-login, we intentionally
+          # do NOT overwrite role from the state JWT to prevent role escalation if
+          # the state token were tampered with.
           if user.new_record?
             user.role       = result[:role]
             user.name       = result[:user_info]["display_name"] || "Unknown"
