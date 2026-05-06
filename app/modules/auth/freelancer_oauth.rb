@@ -5,6 +5,8 @@ module Auth
     TOKEN_URL     = "https://accounts.freelancer.com/oauth2/token"
     USERINFO_URL  = "https://www.freelancer.com/api/users/0.1/self"
 
+    class OAuthError < StandardError; end
+
     def self.authorize_url(role:)
       state = Auth::TokenService.encode({ role: role }, exp: 10.minutes.from_now)
       params = {
@@ -27,32 +29,36 @@ module Auth
       { role: role, access_token: access_token, user_info: user_info }
     end
 
-    def self.fetch_access_token(code)
-      conn = Faraday.new do |f|
-        f.request :url_encoded
-        f.response :json
-      end
-      response = conn.post(TOKEN_URL) do |req|
-        req.body = {
-          grant_type:    "authorization_code",
-          code:          code,
-          redirect_uri:  ENV.fetch("FREELANCER_OAUTH_REDIRECT_URI", ""),
-          client_id:     ENV.fetch("FREELANCER_CLIENT_ID", ""),
-          client_secret: ENV.fetch("FREELANCER_CLIENT_SECRET", "")
-        }
-      end
-      raise "Token exchange failed: #{response.status}" unless response.success?
-      response.body["access_token"]
-    end
+    class << self
+      private
 
-    def self.fetch_user_info(access_token)
-      conn = Faraday.new do |f|
-        f.response :json
-        f.headers["Freelancer-OAuth-V1"] = access_token
+      def fetch_access_token(code)
+        conn = Faraday.new do |f|
+          f.request :url_encoded
+          f.response :json
+        end
+        response = conn.post(TOKEN_URL) do |req|
+          req.body = {
+            grant_type:    "authorization_code",
+            code:          code,
+            redirect_uri:  ENV.fetch("FREELANCER_OAUTH_REDIRECT_URI", ""),
+            client_id:     ENV.fetch("FREELANCER_CLIENT_ID", ""),
+            client_secret: ENV.fetch("FREELANCER_CLIENT_SECRET", "")
+          }
+        end
+        raise OAuthError, "Token exchange failed: #{response.status}" unless response.success?
+        response.body["access_token"]
       end
-      response = conn.get(USERINFO_URL, { compact: true })
-      raise "Token exchange failed: #{response.status}" unless response.success?
-      response.body["result"] || {}
+
+      def fetch_user_info(access_token)
+        conn = Faraday.new do |f|
+          f.response :json
+          f.headers["Freelancer-OAuth-V1"] = access_token
+        end
+        response = conn.get(USERINFO_URL, { compact: true })
+        raise OAuthError, "User info fetch failed: #{response.status}" unless response.success?
+        response.body["result"] || {}
+      end
     end
   end
 end

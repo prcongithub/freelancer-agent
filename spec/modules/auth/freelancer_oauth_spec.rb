@@ -8,6 +8,7 @@ RSpec.describe Auth::FreelancerOAuth do
       expect(url).to include("accounts.freelancer.com")
       expect(url).to include("response_type=code")
       expect(url).to include("state=")
+      expect(url).to include("scope=")
     end
   end
 
