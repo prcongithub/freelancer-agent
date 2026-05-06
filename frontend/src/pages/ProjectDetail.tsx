@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchProject, approveBid, rejectProject, analyzeProject } from '../api/client';
-import type { Project, ProjectAnalysis, BidRecommendation, BidStats } from '../types/api';
+import { fetchProject, approveBid, rejectProject, analyzeProject, generatePrototype, fetchPrototype, approvePrototype, rejectPrototype } from '../api/client';
+import type { Project, ProjectAnalysis, BidRecommendation, BidStats, Prototype } from '../types/api';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -12,14 +12,25 @@ export default function ProjectDetail() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [prototype, setPrototype] = useState<Prototype | null>(null);
+  const [protoLoading, setProtoLoading] = useState(false);
+  const [protoPollInterval, setProtoPollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!id) return;
     fetchProject(id)
-      .then(res => setProject(res.data.project))
+      .then(res => {
+        setProject(res.data.project);
+        // Also fetch prototype status
+        fetchPrototype(id).then(r => setPrototype(r.data.prototype)).catch(() => {});
+      })
       .catch(() => setError('Project not found'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    return () => { if (protoPollInterval) clearInterval(protoPollInterval); };
+  }, [protoPollInterval]);
 
   const handleApprove = async () => {
     if (!project) return;
@@ -57,6 +68,42 @@ export default function ProjectDetail() {
       setActionError('Analysis failed. Please try again.');
       setAnalyzing(false);
     }
+  };
+
+  const handleGeneratePrototype = async () => {
+    if (!project) return;
+    setProtoLoading(true);
+    try {
+      const res = await generatePrototype(project.id);
+      setPrototype(res.data.prototype);
+      // Poll until ready/failed
+      const interval = setInterval(async () => {
+        const r = await fetchPrototype(project.id);
+        const p = r.data.prototype;
+        setPrototype(p);
+        if (p.status !== 'generating') {
+          clearInterval(interval);
+          setProtoPollInterval(null);
+          setProtoLoading(false);
+        }
+      }, 3000);
+      setProtoPollInterval(interval);
+    } catch {
+      setProtoLoading(false);
+      setActionError('Failed to start prototype generation.');
+    }
+  };
+
+  const handleApprovePrototype = async () => {
+    if (!prototype) return;
+    const res = await approvePrototype(prototype.id);
+    setPrototype(res.data.prototype);
+  };
+
+  const handleRejectPrototype = async () => {
+    if (!prototype) return;
+    const res = await rejectPrototype(prototype.id);
+    setPrototype(res.data.prototype);
   };
 
   const handleReject = async () => {
@@ -267,6 +314,15 @@ export default function ProjectDetail() {
           </div>
         )
       }
+
+      {/* Prototype */}
+      <PrototypePanel
+        prototype={prototype}
+        loading={protoLoading}
+        onGenerate={handleGeneratePrototype}
+        onApprove={handleApprovePrototype}
+        onReject={handleRejectPrototype}
+      />
 
       {/* Actions */}
       {actionError && (
@@ -493,6 +549,106 @@ function AnalysisPanel({ analysis, analyzedAt }: { analysis: ProjectAnalysis; an
             ))}
           </ul>
         </div>
+      )}
+    </div>
+  );
+}
+
+function PrototypePanel({
+  prototype, loading, onGenerate, onApprove, onReject
+}: {
+  prototype: Prototype | null;
+  loading: boolean;
+  onGenerate: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  return (
+    <div className="bg-white rounded-lg border p-6 mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-semibold text-gray-800">Prototype</h2>
+        {(!prototype || prototype.status === 'rejected' || prototype.status === 'failed') && (
+          <button
+            onClick={onGenerate}
+            disabled={loading}
+            className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Generating…' : prototype ? 'Regenerate' : 'Generate Prototype'}
+          </button>
+        )}
+      </div>
+
+      {!prototype && !loading && (
+        <p className="text-sm text-gray-400">No prototype yet. Generate one to include a live demo in your bid.</p>
+      )}
+
+      {(loading || prototype?.status === 'generating') && (
+        <div className="flex items-center gap-3 py-4">
+          <div className="animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full" />
+          <p className="text-sm text-gray-500">Building prototype… ~30 seconds</p>
+        </div>
+      )}
+
+      {prototype?.status === 'failed' && (
+        <p className="text-sm text-red-500">Generation failed. Try again.</p>
+      )}
+
+      {prototype?.status === 'ready' && prototype.public_url && (
+        <div>
+          <div className="rounded border overflow-hidden mb-3" style={{ height: 320 }}>
+            <iframe
+              src={prototype.public_url}
+              className="w-full h-full"
+              title="Prototype preview"
+              sandbox="allow-scripts allow-same-origin allow-forms"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <a
+              href={prototype.public_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-indigo-600 hover:underline"
+            >
+              View live ↗
+            </a>
+            <button
+              onClick={onApprove}
+              className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+            >
+              Approve — include in bid
+            </button>
+            <button
+              onClick={onReject}
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 transition-colors"
+            >
+              Reject
+            </button>
+          </div>
+        </div>
+      )}
+
+      {prototype?.status === 'approved' && (
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">Approved</span>
+            <span className="text-xs text-gray-400">Will be included in bid proposal</span>
+          </div>
+          {prototype.public_url && (
+            <a
+              href={prototype.public_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-indigo-600 hover:underline"
+            >
+              {prototype.public_url}
+            </a>
+          )}
+        </div>
+      )}
+
+      {prototype?.status === 'rejected' && (
+        <p className="text-sm text-gray-400">Prototype rejected. Generate a new one.</p>
       )}
     </div>
   );
