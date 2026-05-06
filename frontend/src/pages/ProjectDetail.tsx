@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchProject, approveBid, rejectProject, analyzeProject, generatePrototype, fetchPrototype, approvePrototype, rejectPrototype } from '../api/client';
 import type { Project, ProjectAnalysis, BidRecommendation, BidStats, Prototype } from '../types/api';
@@ -14,7 +14,7 @@ export default function ProjectDetail() {
   const [analyzing, setAnalyzing] = useState(false);
   const [prototype, setPrototype] = useState<Prototype | null>(null);
   const [protoLoading, setProtoLoading] = useState(false);
-  const [protoPollInterval, setProtoPollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
+  const protoPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -29,8 +29,8 @@ export default function ProjectDetail() {
   }, [id]);
 
   useEffect(() => {
-    return () => { if (protoPollInterval) clearInterval(protoPollInterval); };
-  }, [protoPollInterval]);
+    return () => { if (protoPollRef.current) clearInterval(protoPollRef.current); };
+  }, []);
 
   const handleApprove = async () => {
     if (!project) return;
@@ -83,11 +83,11 @@ export default function ProjectDetail() {
         setPrototype(p);
         if (p.status !== 'generating') {
           clearInterval(interval);
-          setProtoPollInterval(null);
+          protoPollRef.current = null;
           setProtoLoading(false);
         }
       }, 3000);
-      setProtoPollInterval(interval);
+      protoPollRef.current = interval;
     } catch {
       setProtoLoading(false);
       setActionError('Failed to start prototype generation.');
@@ -96,14 +96,22 @@ export default function ProjectDetail() {
 
   const handleApprovePrototype = async () => {
     if (!prototype) return;
-    const res = await approvePrototype(prototype.id);
-    setPrototype(res.data.prototype);
+    try {
+      const res = await approvePrototype(prototype.id);
+      setPrototype(res.data.prototype);
+    } catch {
+      setActionError('Failed to approve prototype. Please try again.');
+    }
   };
 
   const handleRejectPrototype = async () => {
     if (!prototype) return;
-    const res = await rejectPrototype(prototype.id);
-    setPrototype(res.data.prototype);
+    try {
+      const res = await rejectPrototype(prototype.id);
+      setPrototype(res.data.prototype);
+    } catch {
+      setActionError('Failed to reject prototype. Please try again.');
+    }
   };
 
   const handleReject = async () => {
