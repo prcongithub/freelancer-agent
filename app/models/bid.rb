@@ -4,7 +4,8 @@ class Bid
 
   belongs_to :project
 
-  field :amount, type: Float
+  field :user_id, type: String
+  field :amount,  type: Float
   field :currency, type: String, default: "USD"
   field :proposal_text, type: String
   field :pricing_breakdown, type: Hash, default: {}

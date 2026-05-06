@@ -2,6 +2,7 @@ class Project
   include Mongoid::Document
   include Mongoid::Timestamps
 
+  field :user_id,       type: String
   field :freelancer_id, type: String
   field :title, type: String
   field :description, type: String
@@ -15,6 +16,11 @@ class Project
   field :bid_at, type: Time
   field :won_at, type: Time
   field :delivered_at, type: Time
+  field :freelancer_url, type: String
+  field :bid_stats, type: Hash, default: {}
+  field :upgrades,  type: Hash, default: {}
+  field :analysis, type: Hash
+  field :analyzed_at, type: Time
 
   STATUSES = %w[discovered bid_sent shortlisted won in_call prd_ready building deployed delivered lost].freeze
   CATEGORIES = %w[aws_devops backend frontend fullstack ai_automation].freeze
