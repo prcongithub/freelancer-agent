@@ -39,7 +39,7 @@ gem "jwt", "~> 2.8"
 gem "bcrypt", "~> 3.1.7"
 
 # AI (proposal generation)
-gem "ruby-openai", "~> 7.0"
+gem "ruby-openai", "~> 8.3"
 
 # AWS Bedrock (Claude via Bedrock)
 gem "aws-sdk-bedrockruntime"
