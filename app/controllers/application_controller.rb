@@ -1,6 +1,12 @@
 class ApplicationController < ActionController::API
+  class Unauthorized < StandardError; end
+  class Forbidden    < StandardError; end
+
+  rescue_from Unauthorized, with: -> { render json: { error: "Unauthorized" }, status: :unauthorized }
+  rescue_from Forbidden,    with: -> { render json: { error: "Forbidden" },    status: :forbidden }
+  rescue_from Mongoid::Errors::DocumentNotFound, with: -> { render json: { error: "Not found" }, status: :not_found }
+
   before_action :authenticate_user!
-  rescue_from Mongoid::Errors::DocumentNotFound, with: :not_found
 
   private
 
@@ -10,21 +16,16 @@ class ApplicationController < ActionController::API
     @current_user_id = payload["user_id"]
     @current_role    = payload["role"]
   rescue Auth::TokenService::InvalidToken
-    render json: { error: "Unauthorized" }, status: :unauthorized
+    raise Unauthorized
   end
 
   def require_role!(*roles)
-    return if roles.map(&:to_s).include?(@current_role)
-    render json: { error: "Forbidden" }, status: :forbidden
+    raise Forbidden unless roles.map(&:to_s).include?(@current_role)
   end
 
   def current_user
     @current_user ||= User.find(@current_user_id)
   rescue Mongoid::Errors::DocumentNotFound
-    render json: { error: "Unauthorized" }, status: :unauthorized
-  end
-
-  def not_found
-    render json: { error: "Not found" }, status: :not_found
+    raise Unauthorized
   end
 end
