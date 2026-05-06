@@ -43,7 +43,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-xl shadow-sm border p-10 max-w-md w-full text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">ProLanceAI</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">PitchSignal</h1>
         <p className="text-gray-500 mb-8">Revenue intelligence for expert freelancers and boutique agencies</p>
 
         {error && (
