@@ -11,6 +11,16 @@ Rails.application.routes.draw do
         member do
           post :approve_bid
           post :reject
+          post :analyze
+          post :prototype, to: "prototypes#create"
+          get  :prototype, to: "prototypes#show"
+        end
+      end
+
+      resources :prototypes, only: [] do
+        member do
+          post :approve
+          post :reject
         end
       end
 
