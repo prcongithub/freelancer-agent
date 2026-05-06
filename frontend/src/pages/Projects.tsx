@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchProjects, approveBid, rejectProject } from '../api/client';
 import type { Project } from '../types/api';
 
@@ -111,7 +112,9 @@ function ProjectCard({
     <div className="bg-white rounded-lg border p-4">
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900">{project.title}</h3>
+          <Link to={`/projects/${project.id}`} className="font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+            {project.title}
+          </Link>
           {project.description && (
             <p className="text-sm text-gray-600 mt-1 line-clamp-2">{project.description}</p>
           )}
@@ -127,7 +130,7 @@ function ProjectCard({
           <div className="flex gap-4 mt-2 text-sm text-gray-500">
             {project.budget_range && (
               <span>
-                ${project.budget_range.min}–${project.budget_range.max} {project.budget_range.currency}
+                {formatBudget(project.budget_range.min, project.budget_range.max, project.budget_range.currency)}
               </span>
             )}
             {project.category && (
@@ -165,6 +168,14 @@ function ProjectCard({
       </div>
     </div>
   );
+}
+
+function formatBudget(min: number | undefined, max: number | undefined, currency: string | undefined): string {
+  const cur = currency ?? 'USD';
+  const symbol = cur === 'USD' ? '$' : cur === 'EUR' ? '€' : cur === 'GBP' ? '£' : null;
+  const prefix = symbol ?? '';
+  const suffix = symbol ? ` ${cur}` : ` ${cur}`;
+  return `${prefix}${(min ?? 0).toLocaleString()}–${prefix}${(max ?? 0).toLocaleString()}${suffix}`;
 }
 
 function statusColor(status: string): string {

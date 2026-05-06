@@ -21,6 +21,31 @@ export interface Client {
   country?: string;
 }
 
+export interface ProjectAnalysis {
+  scope: string;
+  effort_days: number;
+  calendar_weeks: number;
+  recommendation: 'take' | 'skip' | 'maybe';
+  confidence: number;
+  reasoning: string;
+  ai_advantage?: string;
+  skill_gaps: string[];
+  unknowns: string[];
+  red_flags: string[];
+}
+
+export interface BidStats {
+  bid_count?: number;
+  bid_avg?: number;
+}
+
+export interface ProjectUpgrades {
+  nda: boolean;
+  urgent: boolean;
+  featured: boolean;
+  sealed: boolean;
+}
+
 export interface Project {
   id: string;
   freelancer_id: string;
@@ -32,10 +57,30 @@ export interface Project {
   fit_score?: FitScore;
   status: string;
   category?: string;
+  freelancer_url?: string;
+  bid_stats?: BidStats;
+  upgrades?: ProjectUpgrades;
+  bid_recommendation?: BidRecommendation;
   discovered_at?: string;
   bid_at?: string;
   won_at?: string;
   delivered_at?: string;
+  analysis?: ProjectAnalysis;
+  analyzed_at?: string;
+}
+
+export interface BidRecommendation {
+  amount: number;        // in project currency
+  amount_usd: number;   // always USD
+  currency: string;
+  full_amount_usd: number;
+  within_budget: boolean;
+  hourly_rate: number;
+  estimated_hours: number;
+  traditional_days?: number;
+  ai_speedup?: number;
+  discount_applied: number;
+  rate_range: { min: number; max: number };
 }
 
 export interface PricingBreakdown {
@@ -91,4 +136,47 @@ export interface Settings {
   skill_keywords: Record<string, string[]>;
   pricing_floors: Record<string, { min: number; max: number }>;
   notifications: { email: boolean; dashboard: boolean };
+}
+
+export interface ClientProject {
+  freelancer_id: string;
+  title: string;
+  description?: string;
+  budget_range: { min?: number; max?: number; currency?: string };
+  skills_required: string[];
+  bid_count: number;
+  bid_avg?: number;
+}
+
+export interface BidShortlistItem {
+  rank: number;
+  bidder_name: string;
+  bid_amount: number;
+  score: number;
+  strengths: string[];
+  concerns: string[];
+  summary: string;
+}
+
+export interface ClientAnalysisResult {
+  id: string;
+  project_freelancer_id: string;
+  shortlist: BidShortlistItem[];
+  analyzed_at: string;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  provider: string;
+  avatar_url?: string;
+  created_at: string;
+}
+
+export interface AdminStats {
+  users: { total: number; freelancers: number; clients: number };
+  projects: { total: number; by_status: Record<string, number> };
+  analyses: { total: number };
 }

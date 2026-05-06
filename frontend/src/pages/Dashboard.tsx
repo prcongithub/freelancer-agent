@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchDashboard } from '../api/client';
 import type { DashboardData } from '../types/api';
 
@@ -56,7 +57,11 @@ export default function Dashboard() {
           <p className="px-4 py-6 text-center text-gray-400">No projects yet. The scanner will discover projects automatically.</p>
         ) : (
           data.recent_projects.map(project => (
-            <div key={project.id} className="flex items-center justify-between px-4 py-3">
+            <Link
+              key={project.id}
+              to={`/projects/${project.id}`}
+              className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+            >
               <div>
                 <div className="font-medium text-gray-900">{project.title}</div>
                 <div className="text-sm text-gray-500 capitalize">{project.category?.replace(/_/g, ' ')}</div>
@@ -65,7 +70,7 @@ export default function Dashboard() {
                 <span className="text-sm text-gray-600">Score: {project.fit_score?.total ?? '—'}</span>
                 <StatusBadge status={project.status} />
               </div>
-            </div>
+            </Link>
           ))
         )}
       </div>
