@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Project, Bid, DashboardData, Settings, ClientProject, ClientAnalysisResult, AdminUser, AdminStats, Prototype } from '../types/api';
+import type { Project, Bid, DashboardData, Settings, ClientProject, ClientAnalysisResult, AdminUser, AdminStats, Prototype, UserProfile } from '../types/api';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api/v1',
@@ -58,6 +58,19 @@ export const getOAuthUrl = (role: 'freelancer' | 'client') =>
 
 export const adminLogin = (email: string, password: string) =>
   api.post<{ token: string; role: string; name: string }>('/auth/sessions', { email, password });
+
+export const registerUser = (data: {
+  email: string;
+  password: string;
+  password_confirmation: string;
+  role: 'freelancer' | 'client';
+  name?: string;
+}) => api.post<{ token: string; role: string; name: string }>('/auth/registrations', data);
+
+export const getProfile = () =>
+  api.get<{ profile: UserProfile }>('/profile');
+export const updateProfile = (data: { oauth_token?: string; freelancer_user_id?: string; name?: string }) =>
+  api.patch<{ profile: UserProfile }>('/profile', data);
 
 // Client API
 export const fetchClientProjects = () =>
