@@ -36,6 +36,7 @@ Rails.application.routes.draw do
 
       resources :bids, only: [:index, :show]
       resource  :settings, only: [:show, :update]
+      resource  :profile,  only: [:show, :update], controller: "profile"
       get       :dashboard, to: "dashboard#index"
 
       namespace :client do

@@ -23,7 +23,7 @@ class User
   validates :role,         presence: true, inclusion: { in: ROLES }
   validates :name,         presence: true
   validates :email,        format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
-  validates :password,     presence: true, length: { minimum: 8 }, if: :local?
+  validates :password,     presence: true, length: { minimum: 8 }, if: -> { local? && (new_record? || password.present?) }
 
   index({ provider: 1, provider_uid: 1 }, { unique: true })
   index({ role: 1 })
