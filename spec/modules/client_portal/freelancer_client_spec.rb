@@ -32,6 +32,11 @@ RSpec.describe ClientPortal::FreelancerClient do
       stub_request(:get, /freelancer\.com\/api\/projects/).to_return(status: 500)
       expect(subject.list_projects).to eq([])
     end
+
+    it "raises ApiError on network failure" do
+      stub_request(:get, /freelancer\.com\/api\/projects/).to_raise(Faraday::ConnectionFailed.new("connection refused"))
+      expect { subject.list_projects }.to raise_error(ClientPortal::FreelancerClient::ApiError)
+    end
   end
 
   describe "#list_bids" do

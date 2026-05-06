@@ -7,6 +7,7 @@ Rails.application.routes.draw do
       namespace :auth do
         get  "freelancer/authorize", to: "freelancer#authorize"
         get  "freelancer/callback",  to: "freelancer#callback"
+        get  "me",                   to: "sessions#me"
       end
 
       resources :projects, only: [:index, :show] do

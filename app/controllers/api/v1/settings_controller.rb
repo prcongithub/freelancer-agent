@@ -1,6 +1,8 @@
 module Api
   module V1
     class SettingsController < ApplicationController
+      before_action { require_role!(:freelancer, :super_admin) }
+
       def show
         render json: { settings: serialize_settings(Setting.instance) }
       end

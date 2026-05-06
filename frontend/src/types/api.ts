@@ -150,6 +150,7 @@ export interface ClientProject {
 
 export interface BidShortlistItem {
   rank: number;
+  bidder_id: string;
   bidder_name: string;
   bid_amount: number;
   score: number;

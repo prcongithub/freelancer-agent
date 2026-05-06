@@ -1,6 +1,8 @@
 module Api
   module V1
     class DashboardController < ApplicationController
+      before_action { require_role!(:freelancer, :super_admin) }
+
       def index
         render json: {
           pipeline:        pipeline_counts,
@@ -36,7 +38,7 @@ module Api
       end
 
       def recent_projects
-        Project.order(discovered_at: :desc).limit(10).map do |p|
+        Project.order("fit_score.total" => :desc).limit(10).map do |p|
           {
             id:        p.id.to_s,
             title:     p.title,

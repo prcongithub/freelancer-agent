@@ -57,5 +57,14 @@ RSpec.describe "Api::V1::Client::Projects", type: :request do
       post "/api/v1/client/projects/42/analyze_bids"
       expect(response).to have_http_status(:unauthorized)
     end
+
+    it "returns 503 when Freelancer API is unreachable" do
+      allow_any_instance_of(ClientPortal::FreelancerClient)
+        .to receive(:list_projects)
+        .and_raise(ClientPortal::FreelancerClient::ApiError)
+
+      post "/api/v1/client/projects/42/analyze_bids", headers: headers
+      expect(response).to have_http_status(:service_unavailable)
+    end
   end
 end

@@ -12,9 +12,13 @@ module Api
 
         def analyze_bids
           fl = ClientPortal::FreelancerClient.new(current_user.oauth_token)
-          projects = fl.list_projects
-          project = projects.find { |p| p[:freelancer_id] == params[:id] }
+          begin
+            projects = fl.list_projects
+          rescue ClientPortal::FreelancerClient::ApiError => e
+            return render json: { error: "Could not reach Freelancer API" }, status: :service_unavailable
+          end
 
+          project = projects.find { |p| p[:freelancer_id] == params[:id] }
           return render json: { error: "Project not found" }, status: :not_found unless project
 
           ClientPortal::AnalyzeBidsJob.perform_async(

@@ -1,10 +1,15 @@
 module Api
   module V1
     class ProjectsController < ApplicationController
+      before_action { require_role!(:freelancer, :super_admin) }
+
       def index
         projects = Project.all
         projects = projects.with_status(params[:status]) if params[:status].present?
-        projects = projects.order(discovered_at: :desc)
+        projects = case params[:sort]
+                   when "discovered" then projects.order(discovered_at: :desc)
+                   else projects.order("fit_score.total" => :desc)
+                   end
 
         render json: { projects: projects.map { |p| serialize_project(p) } }
       end
@@ -37,6 +42,15 @@ module Api
         render json: { message: "Bid submission queued" }
       end
 
+      def analyze
+        project = Project.find(params[:id])
+        project.update!(analysis: nil, analyzed_at: nil)
+        Analyzer::AnalyzeJob.perform_async(project.id.to_s)
+        render json: { message: "Analysis queued" }
+      rescue Mongoid::Errors::DocumentNotFound
+        render json: { error: "Project not found" }, status: :not_found
+      end
+
       def reject
         result = Project.where(id: params[:id]).update_all("$set" => { status: "lost" })
         if result.n == 0
@@ -48,6 +62,18 @@ module Api
       end
 
       private
+
+      def bid_recommendation(project)
+        Bidder::PricingEngine.new.calculate(
+          category:    project.category,
+          budget_range: project.budget_range,
+          fit_score:   project.fit_score,
+          analysis:    project.analysis
+        )
+      rescue => e
+        Rails.logger.warn("bid_recommendation failed: #{e.message}")
+        nil
+      end
 
       def serialize_project(project)
         {
@@ -64,7 +90,13 @@ module Api
           discovered_at: project.discovered_at,
           bid_at: project.bid_at,
           won_at: project.won_at,
-          delivered_at: project.delivered_at
+          delivered_at: project.delivered_at,
+          freelancer_url: project.freelancer_url,
+          bid_stats: project.bid_stats,
+          upgrades: project.upgrades,
+          bid_recommendation: bid_recommendation(project),
+          analysis: project.analysis,
+          analyzed_at: project.analyzed_at
         }
       end
     end

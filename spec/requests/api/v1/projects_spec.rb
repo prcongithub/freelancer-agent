@@ -65,5 +65,10 @@ RSpec.describe "Api::V1::Projects", type: :request do
       get "/api/v1/projects"
       expect(response).to have_http_status(:unauthorized)
     end
+
+    it "returns 403 for a client user" do
+      get "/api/v1/projects", headers: client_headers
+      expect(response).to have_http_status(:forbidden)
+    end
   end
 end

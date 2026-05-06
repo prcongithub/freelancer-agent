@@ -1,5 +1,7 @@
 module ClientPortal
   class FreelancerClient
+    class ApiError < StandardError; end
+
     BASE_URL = ENV.fetch("FREELANCER_API_BASE_URL", "https://www.freelancer.com/api")
 
     def initialize(oauth_token)
@@ -21,7 +23,7 @@ module ClientPortal
       (response.body.dig("result", "projects") || []).map { |p| normalize_project(p) }
     rescue Faraday::Error => e
       Rails.logger.error("ClientPortal::FreelancerClient#list_projects: #{e.message}")
-      []
+      raise ApiError, e.message
     end
 
     def list_bids(project_id)

@@ -1,6 +1,8 @@
 module Api
   module V1
     class BidsController < ApplicationController
+      before_action { require_role!(:freelancer, :super_admin) }
+
       def index
         bids = Bid.all.includes(:project).order(submitted_at: :desc)
         bids = bids.where(status: params[:status]) if params[:status].present?

@@ -24,7 +24,7 @@ module ClientPortal
       bids_text = bids.each_with_index.map do |bid, i|
         <<~BID
           Bid #{i + 1}:
-            Bidder: #{bid[:bidder_name]}
+            Bidder: #{bid[:bidder_name]} (ID: #{bid[:bidder_id]})
             Amount: $#{bid[:amount]} #{budget[:currency] || "USD"}
             Delivery: #{bid[:delivery_days]} days
             Rating: #{bid[:bidder_rating] || "no rating"} (#{bid[:bidder_reviews]} reviews)
@@ -53,6 +53,7 @@ module ClientPortal
           "shortlist": [
             {
               "rank": <integer starting at 1>,
+              "bidder_id": "<freelancer user ID string>",
               "bidder_name": "<name>",
               "bid_amount": <number>,
               "score": <integer 0-100>,

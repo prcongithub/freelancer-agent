@@ -7,6 +7,7 @@ export default function ClientProjects() {
   const [projects, setProjects] = useState<ClientProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState<string | null>(null);
+  const [queued, setQueued] = useState<string | null>(null);
 
   useEffect(() => {
     fetchClientProjects().then(r => setProjects(r.data.projects)).finally(() => setLoading(false));
@@ -16,7 +17,7 @@ export default function ClientProjects() {
     setAnalyzing(id);
     try {
       await analyzeClientBids(id);
-      alert('Analysis queued — refresh in a moment to see results.');
+      setQueued(id);
     } finally {
       setAnalyzing(null);
     }
@@ -35,10 +36,15 @@ export default function ClientProjects() {
               <Link to={`/client/projects/${p.freelancer_id}`} className="font-semibold text-gray-900 hover:text-blue-600">{p.title}</Link>
               <div className="text-sm text-gray-500 mt-1">{p.bid_count} bids · ${p.budget_range.min}–${p.budget_range.max} {p.budget_range.currency}</div>
             </div>
-            <button onClick={() => handleAnalyze(p.freelancer_id)} disabled={analyzing === p.freelancer_id || p.bid_count === 0}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              {analyzing === p.freelancer_id ? 'Queuing...' : 'Analyze Bids'}
-            </button>
+            {queued === p.freelancer_id
+              ? <span className="text-sm text-green-600 font-medium">Analysis queued</span>
+              : <button
+                  onClick={() => handleAnalyze(p.freelancer_id)}
+                  disabled={analyzing === p.freelancer_id || p.bid_count === 0}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                  {analyzing === p.freelancer_id ? 'Queuing...' : 'Analyze Bids'}
+                </button>
+            }
           </div>
         ))}
       </div>
