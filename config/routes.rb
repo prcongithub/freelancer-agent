@@ -17,6 +17,20 @@ Rails.application.routes.draw do
         end
       end
 
+      resources :projects, only: [] do
+        member do
+          post :prototype,  to: "prototypes#create"
+          get  :prototype,  to: "prototypes#show"
+        end
+      end
+
+      resources :prototypes, only: [] do
+        member do
+          post :approve, to: "prototypes#approve"
+          post :reject,  to: "prototypes#reject"
+        end
+      end
+
       resources :bids, only: [:index, :show]
       resource  :settings, only: [:show, :update]
       get       :dashboard, to: "dashboard#index"

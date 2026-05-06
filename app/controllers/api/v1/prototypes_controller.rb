@@ -16,8 +16,6 @@ module Api
         prototype = Prototype.create!(project_id: project.id.to_s, status: "generating")
         Prototyper::PrototypeGeneratorJob.perform_async(prototype.id.to_s)
         render json: { prototype: serialize(prototype) }, status: :accepted
-      rescue Mongoid::Errors::DocumentNotFound
-        render json: { error: "Project not found" }, status: :not_found
       end
 
       # GET /api/v1/projects/:id/prototype
@@ -31,8 +29,6 @@ module Api
         end
 
         render json: { prototype: serialize(prototype) }
-      rescue Mongoid::Errors::DocumentNotFound
-        render json: { error: "Project not found" }, status: :not_found
       end
 
       # POST /api/v1/prototypes/:id/approve
@@ -40,8 +36,6 @@ module Api
         prototype = Prototype.find(params[:id])
         prototype.update!(status: "approved", approved_at: Time.current)
         render json: { prototype: serialize(prototype) }
-      rescue Mongoid::Errors::DocumentNotFound
-        render json: { error: "Prototype not found" }, status: :not_found
       end
 
       # POST /api/v1/prototypes/:id/reject
@@ -49,8 +43,6 @@ module Api
         prototype = Prototype.find(params[:id])
         prototype.update!(status: "rejected")
         render json: { prototype: serialize(prototype) }
-      rescue Mongoid::Errors::DocumentNotFound
-        render json: { error: "Prototype not found" }, status: :not_found
       end
 
       private
