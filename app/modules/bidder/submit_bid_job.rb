@@ -7,16 +7,24 @@ module Bidder
       project = Project.find(project_id)
       return unless project.status == "discovered"
 
-      # Idempotency: don't create a second bid if one already exists for this project
+      # Idempotency: if already submitted to Freelancer, nothing to do
       existing_bid = Bid.where(project_id: project.id).first
       if existing_bid
-        # If bid exists but project wasn't updated, try to finish the job
-        project.update!(status: "bid_sent", bid_at: Time.current) if project.status == "discovered"
+        if existing_bid.freelancer_bid_id.present?
+          project.set(status: "bid_sent", bid_at: Time.current)
+          return
+        end
+        # Bid record exists but Freelancer submission failed — retry submission only
+        submit_to_freelancer(project, existing_bid)
+        project.set(status: "bid_sent", bid_at: Time.current)
         return
       end
 
       pricing_engine     = PricingEngine.new
       proposal_generator = ProposalGenerator.new
+
+      # Find approved prototype for this project
+      approved_proto = Prototype.by_project(project.id).approved.first
 
       project_data = {
         title:           project.title,
@@ -24,7 +32,9 @@ module Bidder
         category:        project.category,
         budget_range:    project.budget_range&.transform_keys(&:to_sym) || {},
         skills_required: project.skills_required,
-        fit_score:       project.fit_score&.transform_keys(&:to_sym) || {}
+        fit_score:       project.fit_score&.transform_keys(&:to_sym) || {},
+        analysis:        project.analysis,
+        prototype_url:   approved_proto&.public_url
       }
 
       pricing  = pricing_engine.calculate(project_data)
@@ -32,8 +42,8 @@ module Bidder
 
       bid = Bid.create!(
         project:           project,
-        amount:            pricing[:amount],
-        currency:          "USD",
+        amount:            pricing[:amount],        # in project currency
+        currency:          pricing[:currency] || "USD",
         proposal_text:     proposal,
         pricing_breakdown: pricing,
         status:            "submitted",
@@ -58,6 +68,7 @@ module Bidder
       response = conn.post("projects/0.1/bids/") do |req|
         req.body = {
           project_id:           project.freelancer_id.to_i,
+          bidder_id:            ENV.fetch("FREELANCER_USER_ID").to_i,
           amount:               bid.amount,
           period:               7,
           milestone_percentage: 100,

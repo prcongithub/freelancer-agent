@@ -27,6 +27,7 @@ RSpec.describe Bidder::SubmitBidJob do
       discount_applied: 0.0
     })
     allow(proposal_generator).to receive(:generate).and_return("I'd love to work on your project...")
+    allow(Prototype).to receive_message_chain(:by_project, :approved, :first).and_return(nil)
   end
 
   describe "#perform" do

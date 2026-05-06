@@ -21,7 +21,15 @@ module Bidder
 
     def generate(project)
       prompt   = build_prompt(project)
-      call_bedrock(prompt, system_prompt: SYSTEM_PROMPT, max_tokens: 600, temperature: 0.7)
+      proposal = call_bedrock(prompt, system_prompt: SYSTEM_PROMPT, max_tokens: 600, temperature: 0.7)
+
+      if project[:prototype_url].present?
+        proposal += "\n\nI've already built a working prototype based on your requirements — try it now:\n" \
+                    "#{project[:prototype_url]}\n\n" \
+                    "No setup needed. The data layer is fully wired — create, edit, and delete records live."
+      end
+
+      proposal
     rescue Aws::BedrockRuntime::Errors::ServiceError => e
       Rails.logger.error("ProposalGenerator Bedrock error: #{e.class}: #{e.message}")
       fallback_proposal(project)
