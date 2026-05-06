@@ -6,7 +6,7 @@ RSpec.describe "Api::V1::Projects", type: :request do
       Project.create!(freelancer_id: "1", title: "Project A", status: "discovered", fit_score: { "total" => 80 })
       Project.create!(freelancer_id: "2", title: "Project B", status: "bid_sent", fit_score: { "total" => 70 })
 
-      get "/api/v1/projects"
+      get "/api/v1/projects", headers: freelancer_headers
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
@@ -17,7 +17,7 @@ RSpec.describe "Api::V1::Projects", type: :request do
       Project.create!(freelancer_id: "1", title: "A", status: "discovered", fit_score: { "total" => 80 })
       Project.create!(freelancer_id: "2", title: "B", status: "bid_sent", fit_score: { "total" => 70 })
 
-      get "/api/v1/projects", params: { status: "discovered" }
+      get "/api/v1/projects", params: { status: "discovered" }, headers: freelancer_headers
 
       json = JSON.parse(response.body)
       expect(json["projects"].length).to eq(1)
@@ -31,7 +31,7 @@ RSpec.describe "Api::V1::Projects", type: :request do
                                 fit_score: { "total" => 70 }, category: "fullstack")
 
       expect {
-        post "/api/v1/projects/#{project.id}/approve_bid"
+        post "/api/v1/projects/#{project.id}/approve_bid", headers: freelancer_headers
       }.to change(Sidekiq::Queues["bidding"], :size).by(1)
 
       expect(response).to have_http_status(:ok)
@@ -41,7 +41,7 @@ RSpec.describe "Api::V1::Projects", type: :request do
       project = Project.create!(freelancer_id: "1", title: "A", status: "bid_sent",
                                 fit_score: { "total" => 70 })
 
-      post "/api/v1/projects/#{project.id}/approve_bid"
+      post "/api/v1/projects/#{project.id}/approve_bid", headers: freelancer_headers
 
       expect(response).to have_http_status(:unprocessable_content)
     end
@@ -52,11 +52,18 @@ RSpec.describe "Api::V1::Projects", type: :request do
       project = Project.create!(freelancer_id: "1", title: "A", status: "discovered",
                                 fit_score: { "total" => 70 })
 
-      post "/api/v1/projects/#{project.id}/reject"
+      post "/api/v1/projects/#{project.id}/reject", headers: freelancer_headers
 
       expect(response).to have_http_status(:ok)
       project.reload
       expect(project.status).to eq("lost")
+    end
+  end
+
+  describe "authentication" do
+    it "returns 401 without a JWT token" do
+      get "/api/v1/projects"
+      expect(response).to have_http_status(:unauthorized)
     end
   end
 end

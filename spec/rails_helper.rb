@@ -9,6 +9,7 @@ require 'webmock/rspec'
 require "sidekiq/testing"
 Sidekiq::Testing.fake!
 # Add additional requires below this line. Rails is not loaded until this point!
+require_relative "support/auth_helpers"
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
 # spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
@@ -28,6 +29,8 @@ Sidekiq::Testing.fake!
 RSpec.configure do |config|
   # Remove this line to enable support for ActiveRecord
   config.use_active_record = false
+
+  config.include AuthHelpers, type: :request
 
   config.after(:each) do
     Mongoid.purge!

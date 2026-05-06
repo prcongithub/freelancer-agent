@@ -8,7 +8,7 @@ RSpec.describe "Api::V1::Dashboard", type: :request do
       Project.create!(freelancer_id: "2", title: "Project B", status: "bid_sent",
                       fit_score: { "total" => 70 }, category: "aws_devops", discovered_at: Time.current)
 
-      get "/api/v1/dashboard"
+      get "/api/v1/dashboard", headers: freelancer_headers
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)

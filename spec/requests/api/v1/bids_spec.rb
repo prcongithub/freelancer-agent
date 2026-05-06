@@ -9,7 +9,7 @@ RSpec.describe "Api::V1::Bids", type: :request do
                   submitted_at: Time.current,
                   pricing_breakdown: { "hourly_rate" => 75, "estimated_hours" => 20 })
 
-      get "/api/v1/bids"
+      get "/api/v1/bids", headers: freelancer_headers
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
@@ -22,7 +22,7 @@ RSpec.describe "Api::V1::Bids", type: :request do
       Bid.create!(project: project, amount: 1500, status: "submitted", submitted_at: Time.current)
       Bid.create!(project: project, amount: 2000, status: "won", submitted_at: Time.current)
 
-      get "/api/v1/bids", params: { status: "won" }
+      get "/api/v1/bids", params: { status: "won" }, headers: freelancer_headers
 
       json = JSON.parse(response.body)
       expect(json["bids"].length).to eq(1)

@@ -6,7 +6,7 @@ RSpec.describe "Api::V1::Prototypes", type: :request do
   describe "POST /api/v1/projects/:id/prototype" do
     it "creates a prototype and enqueues the generator job" do
       expect {
-        post "/api/v1/projects/#{project.id}/prototype"
+        post "/api/v1/projects/#{project.id}/prototype", headers: freelancer_headers
       }.to change(Sidekiq::Queues["default"], :size).by(1)
 
       expect(response).to have_http_status(:accepted)
@@ -18,7 +18,7 @@ RSpec.describe "Api::V1::Prototypes", type: :request do
     it "returns existing prototype if one is already active" do
       existing = Prototype.create!(project_id: project.id.to_s, status: "ready")
 
-      post "/api/v1/projects/#{project.id}/prototype"
+      post "/api/v1/projects/#{project.id}/prototype", headers: freelancer_headers
 
       expect(response).to have_http_status(:accepted)
       json = JSON.parse(response.body)
@@ -26,7 +26,7 @@ RSpec.describe "Api::V1::Prototypes", type: :request do
     end
 
     it "returns 404 for unknown project" do
-      post "/api/v1/projects/000000000000000000000000/prototype"
+      post "/api/v1/projects/000000000000000000000000/prototype", headers: freelancer_headers
 
       expect(response).to have_http_status(:not_found)
     end
@@ -36,7 +36,7 @@ RSpec.describe "Api::V1::Prototypes", type: :request do
     it "returns the latest prototype for a project" do
       Prototype.create!(project_id: project.id.to_s, status: "ready")
 
-      get "/api/v1/projects/#{project.id}/prototype"
+      get "/api/v1/projects/#{project.id}/prototype", headers: freelancer_headers
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
@@ -44,7 +44,7 @@ RSpec.describe "Api::V1::Prototypes", type: :request do
     end
 
     it "returns 404 when no prototype exists" do
-      get "/api/v1/projects/#{project.id}/prototype"
+      get "/api/v1/projects/#{project.id}/prototype", headers: freelancer_headers
 
       expect(response).to have_http_status(:not_found)
     end
@@ -54,7 +54,7 @@ RSpec.describe "Api::V1::Prototypes", type: :request do
     it "sets status to approved" do
       prototype = Prototype.create!(project_id: project.id.to_s, status: "ready")
 
-      post "/api/v1/prototypes/#{prototype.id}/approve"
+      post "/api/v1/prototypes/#{prototype.id}/approve", headers: freelancer_headers
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
@@ -67,7 +67,7 @@ RSpec.describe "Api::V1::Prototypes", type: :request do
     it "sets status to rejected" do
       prototype = Prototype.create!(project_id: project.id.to_s, status: "ready")
 
-      post "/api/v1/prototypes/#{prototype.id}/reject"
+      post "/api/v1/prototypes/#{prototype.id}/reject", headers: freelancer_headers
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)

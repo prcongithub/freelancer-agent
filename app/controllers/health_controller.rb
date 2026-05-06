@@ -1,4 +1,6 @@
 class HealthController < ApplicationController
+  skip_before_action :authenticate_user!, raise: false
+
   def show
     # Check MongoDB connection
     Mongoid.default_client.command(ping: 1)
