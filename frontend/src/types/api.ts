@@ -193,3 +193,12 @@ export interface Prototype {
   approved_at?: string;
   created_at?: string;
 }
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  freelancer_user_id: string | null;
+  has_api_token: boolean;
+}
