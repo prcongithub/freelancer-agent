@@ -13,6 +13,7 @@ class User
   field :name,                type: String
   field :email,               type: String
   field :avatar_url,          type: String
+  field :freelancer_user_id,  type: String
   field :password_digest,     type: String
 
   has_secure_password validations: false

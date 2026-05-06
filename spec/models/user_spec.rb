@@ -35,6 +35,17 @@ RSpec.describe User, type: :model do
     expect(user).not_to be_valid
   end
 
+  describe "freelancer_user_id field" do
+    it "stores and retrieves freelancer_user_id" do
+      user = User.new(
+        provider: "local", provider_uid: "test@example.com",
+        role: "freelancer", name: "Test", email: "test@example.com",
+        password: "password123", freelancer_user_id: "2870829"
+      )
+      expect(user.freelancer_user_id).to eq("2870829")
+    end
+  end
+
   describe "local (super_admin) user" do
     subject(:user) do
       User.new(
