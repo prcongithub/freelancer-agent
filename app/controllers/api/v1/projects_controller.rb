@@ -38,7 +38,7 @@ module Api
           return
         end
 
-        Bidder::SubmitBidJob.perform_async(params[:id].to_s)
+        Bidder::SubmitBidJob.perform_async(params[:id].to_s, @current_user_id)
         render json: { message: "Bid submission queued" }
       end
 
