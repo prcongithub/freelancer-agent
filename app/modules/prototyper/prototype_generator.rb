@@ -1,6 +1,6 @@
 module Prototyper
   class PrototypeGenerator
-    DEFAULT_MODEL = "global.anthropic.claude-haiku-4-5-20251001-v1:0".freeze
+    include BedrockCaller
 
     CATEGORY_HINTS = {
       "frontend"      => "Build a full UI with working navigation, multiple pages/views, and all data operations wired to the API.",
@@ -12,10 +12,10 @@ module Prototyper
 
     def generate(project_data)
       prompt = build_prompt(project_data)
-      html   = call_bedrock(prompt)
+      html   = call_bedrock(prompt, max_tokens: 8000, temperature: 0.5)
 
       unless valid_html?(html)
-        html = call_bedrock(build_simple_prompt(project_data))
+        html = call_bedrock(build_simple_prompt(project_data), max_tokens: 8000, temperature: 0.5)
         raise "Malformed HTML after retry" unless valid_html?(html)
       end
 
@@ -105,23 +105,6 @@ module Prototyper
         Watermark "⚡ Prototype by Prashant C." bottom-right.
         Return ONLY the HTML file starting with <!DOCTYPE html>.
       PROMPT
-    end
-
-    def call_bedrock(prompt)
-      client = Aws::BedrockRuntime::Client.new(
-        region:            ENV.fetch("AWS_BEDROCK_REGION", "us-east-1"),
-        access_key_id:     ENV.fetch("AWS_BEDROCK_ACCESS_KEY_ID"),
-        secret_access_key: ENV.fetch("AWS_BEDROCK_SECRET_ACCESS_KEY")
-      )
-
-      response = client.converse(
-        model_id:         ENV.fetch("BEDROCK_MODEL_ID", DEFAULT_MODEL),
-        messages:         [{ role: "user", content: [{ text: prompt }] }],
-        inference_config: { max_tokens: 8000, temperature: 0.5 }
-      )
-
-      text = response.output.message.content.first.text
-      text.gsub(/\A```(?:html)?\n?/, "").gsub(/\n?```\z/, "").strip
     end
 
     def valid_html?(html)

@@ -1,62 +1,68 @@
 module Bidder
   class ProposalGenerator
-    def initialize
-      @client = OpenAI::Client.new(access_token: ENV.fetch("OPENAI_API_KEY", ""))
-    end
+    include BedrockCaller
+
+    SYSTEM_PROMPT = <<~PROMPT.freeze
+      You are writing a Freelancer.com bid proposal for a Full Stack Developer and AWS/DevOps consultant
+      who uses Claude Code and AI coding agents to deliver projects 3-5x faster than traditional developers.
+
+      Write concise, confident proposals (150-250 words) that:
+      - Open by directly addressing the client's specific problem (no generic greetings)
+      - Reference 1-2 concrete technologies from the project requirements
+      - Briefly mention AI-assisted delivery as a speed/quality advantage
+      - Propose a clear approach in 2-3 sentences
+      - State a realistic timeline (AI-assisted, so shorter than market average)
+      - End with a specific call to action
+
+      Do NOT use: "I am writing to", "I would like to", "I am interested in", or any generic opener.
+      Do NOT mention pricing — that is set separately.
+      Each proposal must be unique to the project.
+    PROMPT
 
     def generate(project)
       prompt   = build_prompt(project)
-      response = @client.chat(
-        parameters: {
-          model:       "gpt-4o-mini",
-          messages:    [
-            { role: "system", content: system_prompt },
-            { role: "user",   content: prompt }
-          ],
-          max_tokens:  500,
-          temperature: 0.7
-        }
-      )
-
-      response.dig("choices", 0, "message", "content") || fallback_proposal(project)
-    rescue Faraday::ConnectionFailed, Faraday::TimeoutError, Faraday::Error => e
-      Rails.logger.error("ProposalGenerator#generate network error: #{e.message}")
+      call_bedrock(prompt, system_prompt: SYSTEM_PROMPT, max_tokens: 600, temperature: 0.7)
+    rescue Aws::BedrockRuntime::Errors::ServiceError => e
+      Rails.logger.error("ProposalGenerator Bedrock error: #{e.class}: #{e.message}")
       fallback_proposal(project)
     rescue => e
-      Rails.logger.error("ProposalGenerator#generate unexpected error: #{e.class}: #{e.message}")
-      raise  # Don't swallow programming errors
+      Rails.logger.error("ProposalGenerator unexpected error: #{e.class}: #{e.message}")
+      raise
     end
 
     private
 
-    def system_prompt
-      <<~PROMPT
-        You are a freelance proposal writer for a Full Stack Developer and AWS/DevOps consultant.
-        Write concise, professional proposals (150-250 words) that:
-        - Reference specific project requirements
-        - Highlight relevant experience
-        - Propose a clear approach and timeline
-        - Are confident but not arrogant
-        - End with a call to action
-        Do NOT use generic templates. Each proposal must be unique to the project.
-      PROMPT
-    end
-
     def build_prompt(project)
+      ai_days        = project.dig(:analysis, "effort_days") || project.dig(:analysis, :effort_days)
+      trad_days      = project.dig(:analysis, "traditional_effort_days") || project.dig(:analysis, :traditional_effort_days)
+      ai_advantage   = project.dig(:analysis, "ai_advantage") || project.dig(:analysis, :ai_advantage)
+      scope_summary  = project.dig(:analysis, "scope") || project.dig(:analysis, :scope)
+
+      timeline_hint = if ai_days
+        trad_days ? "#{ai_days} working days (vs ~#{trad_days}d traditional)" : "#{ai_days} working days"
+      end
+
       <<~PROMPT
         Write a bid proposal for this Freelancer.com project:
 
         Title: #{project[:title]}
-        Description: #{project[:description]}
+        Description: #{project[:description]&.slice(0, 800)}
         Skills Required: #{(project[:skills_required] || []).join(", ")}
-        Budget: #{project.dig(:budget_range, :min)}-#{project.dig(:budget_range, :max)} #{project.dig(:budget_range, :currency) || "USD"}
+        Budget: $#{project.dig(:budget_range, :min)}–$#{project.dig(:budget_range, :max)} #{project.dig(:budget_range, :currency) || "USD"}
+        #{"Scope summary (from prior analysis): #{scope_summary}" if scope_summary}
+        #{"AI delivery advantage for this project: #{ai_advantage}" if ai_advantage}
+        #{"Estimated timeline: #{timeline_hint}" if timeline_hint}
 
-        My relevant skills: Ruby on Rails, React, Node.js, AWS (ECS, Lambda, S3, RDS), Docker, Kubernetes, Terraform, CI/CD, PostgreSQL, MongoDB, AI/automation, TypeScript.
+        My skills: Ruby on Rails 8, React 19, TypeScript, Node.js, AWS (ECS, Lambda, S3, RDS, CloudFront),
+        Docker, Kubernetes, Terraform, CI/CD, PostgreSQL, MongoDB, AI/automation (Claude, OpenAI), n8n.
       PROMPT
     end
 
     def fallback_proposal(project)
-      "Hi, I'd love to help with your #{project[:title]} project. I have extensive experience with #{(project[:skills_required] || []).first(3).join(", ")} and can deliver a high-quality solution within your timeline. Let's discuss the details."
+      skills = (project[:skills_required] || []).first(3).join(", ")
+      "Your #{project[:title]} project aligns well with my stack. I've built similar systems using #{skills} " \
+      "and deliver with Claude Code, which cuts typical timelines significantly. " \
+      "Happy to discuss specifics — when can we connect?"
     end
   end
 end

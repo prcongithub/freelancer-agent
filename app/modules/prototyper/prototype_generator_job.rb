@@ -30,6 +30,7 @@ module Prototyper
       )
     rescue => e
       Rails.logger.error("PrototypeGeneratorJob failed for #{prototype_id}: #{e.class}: #{e.message}")
+      # Use update_all (bypasses callbacks) — safe for failure path marking
       Prototype.where(id: prototype_id).update_all("$set" => { status: "failed" })
       raise
     end
