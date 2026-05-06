@@ -28,7 +28,7 @@ gem "rack-cors"
 gem "mongoid", "~> 9.0"
 
 # Background jobs
-gem "sidekiq", "~> 7.0"
+gem "sidekiq", "~> 8.1"
 gem "sidekiq-cron", "~> 1.12"
 
 # HTTP client (Freelancer API)
