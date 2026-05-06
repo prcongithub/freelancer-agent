@@ -9,6 +9,7 @@ Rails.application.routes.draw do
         get  "freelancer/callback",  to: "freelancer#callback"
         get  "me",                   to: "sessions#me"
         post "sessions",             to: "sessions#create"
+        post "registrations",        to: "registrations#create"
       end
 
       resources :projects, only: [:index, :show] do
