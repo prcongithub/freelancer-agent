@@ -27,7 +27,7 @@ function FreelancerNav() {
   return (
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
-        <span className="font-bold text-gray-900 mr-4">Freelancing Agent</span>
+        <span className="font-bold text-gray-900 mr-4">ProLanceAI</span>
         {links.map(([to, label, end]) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => isActive ? 'font-semibold text-blue-600' : 'text-gray-600 hover:text-gray-900'}>{label}</NavLink>
         ))}
@@ -42,7 +42,7 @@ function ClientNav() {
   return (
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
-        <span className="font-bold text-gray-900 mr-4">Freelancing Agent</span>
+        <span className="font-bold text-gray-900 mr-4">ProLanceAI</span>
         <NavLink to="/client/projects" className={({ isActive }) => isActive ? 'font-semibold text-blue-600' : 'text-gray-600 hover:text-gray-900'}>My Projects</NavLink>
         <button onClick={logout} className="ml-auto text-sm text-gray-500 hover:text-gray-900">Logout</button>
       </div>
@@ -55,7 +55,7 @@ function AdminNav() {
   return (
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
-        <span className="font-bold text-gray-900 mr-4">Freelancing Agent — Admin</span>
+        <span className="font-bold text-gray-900 mr-4">ProLanceAI — Admin</span>
         <NavLink to="/admin/users" className={({ isActive }) => isActive ? 'font-semibold text-blue-600' : 'text-gray-600 hover:text-gray-900'}>Users</NavLink>
         <NavLink to="/admin/stats" className={({ isActive }) => isActive ? 'font-semibold text-blue-600' : 'text-gray-600 hover:text-gray-900'}>Stats</NavLink>
         <button onClick={logout} className="ml-auto text-sm text-gray-500 hover:text-gray-900">Logout</button>

@@ -56,6 +56,9 @@ export const updateSettings = (data: Partial<Settings>) =>
 export const getOAuthUrl = (role: 'freelancer' | 'client') =>
   api.get<{ url: string }>(`/auth/freelancer/authorize?role=${role}`);
 
+export const adminLogin = (email: string, password: string) =>
+  api.post<{ token: string; role: string; name: string }>('/auth/sessions', { email, password });
+
 // Client API
 export const fetchClientProjects = () =>
   api.get<{ projects: ClientProject[] }>('/client/projects');
