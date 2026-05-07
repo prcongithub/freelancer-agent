@@ -202,3 +202,9 @@ export interface UserProfile {
   freelancer_user_id: string | null;
   has_api_token: boolean;
 }
+
+export interface AgentConfig {
+  agent: string;
+  config: Record<string, unknown>;
+  updated_at?: string;
+}

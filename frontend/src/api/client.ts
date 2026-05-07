@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Project, Bid, DashboardData, Settings, ClientProject, ClientAnalysisResult, AdminUser, AdminStats, Prototype, UserProfile } from '../types/api';
+import type { Project, Bid, DashboardData, Settings, ClientProject, ClientAnalysisResult, AdminUser, AdminStats, Prototype, UserProfile, AgentConfig } from '../types/api';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api/v1',
@@ -87,5 +87,15 @@ export const updateUserRole = (userId: string, role: string) =>
   api.patch<{ user: AdminUser }>(`/admin/users/${userId}`, { role });
 export const fetchAdminStats = () =>
   api.get<{ stats: AdminStats }>('/admin/stats');
+
+// Agent Config Admin API
+export const fetchAgentConfigs = () =>
+  api.get<{ agents: AgentConfig[] }>('/admin/agents');
+
+export const fetchAgentConfig = (agent: string) =>
+  api.get<{ agent: AgentConfig }>(`/admin/agents/${agent}`);
+
+export const updateAgentConfig = (agent: string, config: Record<string, unknown>) =>
+  api.patch<{ agent: AgentConfig }>(`/admin/agents/${agent}`, { config });
 
 export default api;
