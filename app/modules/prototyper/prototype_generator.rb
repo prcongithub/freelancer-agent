@@ -15,7 +15,7 @@ module Prototyper
       max_tokens = cfg.fetch("max_tokens", 8000).to_i
       temp       = cfg.fetch("temperature", 0.5).to_f
 
-      prompt = build_prompt(project_data)
+      prompt = build_prompt(project_data, cfg)
       html   = call_bedrock(prompt, max_tokens: max_tokens, temperature: temp)
 
       unless valid_html?(html)
@@ -55,13 +55,14 @@ module Prototyper
 
     private
 
-    def build_prompt(project_data)
+    def build_prompt(project_data, cfg = {})
       proto_id      = project_data[:proto_id]
       proto_url     = project_data[:proto_api_url]
       category      = project_data[:category] || "fullstack"
       scope         = project_data.dig(:analysis, "scope") || project_data.dig(:analysis, :scope) || ""
       skills        = (project_data[:skills_required] || []).join(", ")
-      category_hint = category_hints[category] || category_hints["fullstack"] || CATEGORY_HINTS["fullstack"]
+      hints         = category_hints(cfg)
+      category_hint = hints[category] || hints["fullstack"] || CATEGORY_HINTS["fullstack"]
 
       <<~PROMPT
         You are building a working prototype for a Freelancer.com client.
@@ -115,8 +116,7 @@ module Prototyper
       html.to_s.include?("</html>")
     end
 
-    def category_hints
-      cfg = AgentConfig.for("prototyper").config
+    def category_hints(cfg = {})
       (cfg["category_hints"] || {}).presence || CATEGORY_HINTS
     end
   end

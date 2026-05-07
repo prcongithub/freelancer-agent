@@ -39,9 +39,9 @@ module Analyzer
     PROFILE
 
     def analyze(project)
-      prompt = build_prompt(project)
-      cfg  = AgentConfig.for("analyzer").config
-      text = call_bedrock(
+      cfg    = AgentConfig.for("analyzer").config
+      prompt = build_prompt(project, cfg)
+      text   = call_bedrock(
         prompt,
         max_tokens:  cfg.fetch("max_tokens",  1024).to_i,
         temperature: cfg.fetch("temperature", 0.3).to_f
@@ -60,7 +60,7 @@ module Analyzer
 
     private
 
-    def build_prompt(project)
+    def build_prompt(project, cfg = {})
       budget   = project.budget_range || {}
       skills   = (project.skills_required || []).join(", ")
       currency = budget["currency"] || budget[:currency] || "USD"
@@ -75,7 +75,7 @@ module Analyzer
       <<~PROMPT
         You are evaluating a freelance project for a developer with the following profile:
 
-        #{skill_profile}
+        #{skill_profile(cfg)}
 
         Analyze this project and respond with ONLY a JSON object (no markdown, no explanation outside the JSON):
 
@@ -108,8 +108,8 @@ module Analyzer
       JSON.parse(text)
     end
 
-    def skill_profile
-      AgentConfig.for("analyzer").config.fetch("skill_profile", SKILL_PROFILE)
+    def skill_profile(cfg = {})
+      cfg.fetch("skill_profile", SKILL_PROFILE)
     end
   end
 end
