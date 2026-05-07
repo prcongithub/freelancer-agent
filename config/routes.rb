@@ -51,6 +51,7 @@ Rails.application.routes.draw do
       namespace :admin do
         resources :users, only: [:index, :update]
         get :stats, to: "stats#index"
+        resources :agents, only: [:index, :show, :update], param: :agent
       end
     end
   end
