@@ -44,7 +44,8 @@ module Analyzer
       text   = call_bedrock(
         prompt,
         max_tokens:  cfg.fetch("max_tokens",  1024).to_i,
-        temperature: cfg.fetch("temperature", 0.3).to_f
+        temperature: cfg.fetch("temperature", 0.3).to_f,
+        model_id:    cfg["model_id"]
       )
       parse_response(text)
     rescue Aws::BedrockRuntime::Errors::ServiceError => e
