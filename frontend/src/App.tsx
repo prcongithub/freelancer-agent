@@ -12,6 +12,7 @@ import ClientProjectDetail from './pages/client/ClientProjectDetail';
 import ClientAnalysis from './pages/client/ClientAnalysis';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminStats from './pages/admin/AdminStats';
+import AdminAgentConfig from './pages/admin/AdminAgentConfig';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles: string[] }) {
   const { user, isLoading } = useAuth();
@@ -113,6 +114,7 @@ function AdminNav() {
         <div className="w-px h-5 bg-slate-200 mx-2" />
         <NavItem to="/admin/users" label="Users" />
         <NavItem to="/admin/stats" label="Stats" />
+        <NavItem to="/admin/agents" label="Agents" />
         <button
           onClick={logout}
           className="ml-auto text-xs font-medium text-slate-400 hover:text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
@@ -153,6 +155,8 @@ export default function App() {
 
         <Route path="/admin/users" element={<ProtectedRoute roles={['super_admin']}><AppLayout nav={<AdminNav />}><AdminUsers /></AppLayout></ProtectedRoute>} />
         <Route path="/admin/stats" element={<ProtectedRoute roles={['super_admin']}><AppLayout nav={<AdminNav />}><AdminStats /></AppLayout></ProtectedRoute>} />
+        <Route path="/admin/agents" element={<ProtectedRoute roles={['super_admin']}><AppLayout nav={<AdminNav />}><AdminAgentConfig /></AppLayout></ProtectedRoute>} />
+        <Route path="/admin/agents/:agent" element={<ProtectedRoute roles={['super_admin']}><AppLayout nav={<AdminNav />}><AdminAgentConfig /></AppLayout></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
       </Routes>
