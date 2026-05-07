@@ -20,8 +20,13 @@ module Bidder
     PROMPT
 
     def generate(project)
+      cfg        = AgentConfig.for("bidder").config
+      sys_prompt = cfg["proposal_system_prompt"].presence || SYSTEM_PROMPT
+      max_tokens = cfg.fetch("proposal_max_tokens", 600).to_i
+      temp       = cfg.fetch("proposal_temperature", 0.7).to_f
+
       prompt   = build_prompt(project)
-      proposal = call_bedrock(prompt, system_prompt: SYSTEM_PROMPT, max_tokens: 600, temperature: 0.7)
+      proposal = call_bedrock(prompt, system_prompt: sys_prompt, max_tokens: max_tokens, temperature: temp)
 
       if project[:prototype_url].present?
         proposal += "\n\nI've already built a working prototype based on your requirements — try it now:\n" \

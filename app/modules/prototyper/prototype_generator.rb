@@ -11,11 +11,15 @@ module Prototyper
     }.freeze
 
     def generate(project_data)
+      cfg        = AgentConfig.for("prototyper").config
+      max_tokens = cfg.fetch("max_tokens", 8000).to_i
+      temp       = cfg.fetch("temperature", 0.5).to_f
+
       prompt = build_prompt(project_data)
-      html   = call_bedrock(prompt, max_tokens: 8000, temperature: 0.5)
+      html   = call_bedrock(prompt, max_tokens: max_tokens, temperature: temp)
 
       unless valid_html?(html)
-        html = call_bedrock(build_simple_prompt(project_data), max_tokens: 8000, temperature: 0.5)
+        html = call_bedrock(build_simple_prompt(project_data), max_tokens: max_tokens, temperature: temp)
         raise "Malformed HTML after retry" unless valid_html?(html)
       end
 
@@ -57,7 +61,7 @@ module Prototyper
       category      = project_data[:category] || "fullstack"
       scope         = project_data.dig(:analysis, "scope") || project_data.dig(:analysis, :scope) || ""
       skills        = (project_data[:skills_required] || []).join(", ")
-      category_hint = CATEGORY_HINTS[category] || CATEGORY_HINTS["fullstack"]
+      category_hint = category_hints[category] || category_hints["fullstack"] || CATEGORY_HINTS["fullstack"]
 
       <<~PROMPT
         You are building a working prototype for a Freelancer.com client.
@@ -109,6 +113,11 @@ module Prototyper
 
     def valid_html?(html)
       html.to_s.include?("</html>")
+    end
+
+    def category_hints
+      cfg = AgentConfig.for("prototyper").config
+      (cfg["category_hints"] || {}).presence || CATEGORY_HINTS
     end
   end
 end

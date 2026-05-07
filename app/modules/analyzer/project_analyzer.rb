@@ -40,7 +40,12 @@ module Analyzer
 
     def analyze(project)
       prompt = build_prompt(project)
-      text   = call_bedrock(prompt)
+      cfg  = AgentConfig.for("analyzer").config
+      text = call_bedrock(
+        prompt,
+        max_tokens:  cfg.fetch("max_tokens",  1024).to_i,
+        temperature: cfg.fetch("temperature", 0.3).to_f
+      )
       parse_response(text)
     rescue Aws::BedrockRuntime::Errors::ServiceError => e
       Rails.logger.error("Analyzer::ProjectAnalyzer Bedrock error: #{e.class}: #{e.message}")
@@ -70,7 +75,7 @@ module Analyzer
       <<~PROMPT
         You are evaluating a freelance project for a developer with the following profile:
 
-        #{SKILL_PROFILE}
+        #{skill_profile}
 
         Analyze this project and respond with ONLY a JSON object (no markdown, no explanation outside the JSON):
 
@@ -101,6 +106,10 @@ module Analyzer
 
     def parse_response(text)
       JSON.parse(text)
+    end
+
+    def skill_profile
+      AgentConfig.for("analyzer").config.fetch("skill_profile", SKILL_PROFILE)
     end
   end
 end

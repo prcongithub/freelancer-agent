@@ -4,7 +4,8 @@ module Tracker
     sidekiq_options queue: :bidding
 
     def perform
-      threshold = Setting.instance.auto_bid_threshold
+      cfg       = AgentConfig.for("tracker").config
+      threshold = cfg.fetch("auto_bid_threshold", 80).to_i
 
       Project.where(status: "discovered")
              .above_threshold(threshold)

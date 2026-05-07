@@ -12,8 +12,15 @@ module Bidder
     AGENT_DISCOUNT_PERCENT   = 0.25
 
     def calculate(project)
+      cfg      = AgentConfig.for("bidder").config
+      db_rates = (cfg["category_rates"] || {}).transform_values { |v|
+        { min: v["min"].to_i, max: v["max"].to_i }
+      }
+      rates_map          = db_rates.presence || CATEGORY_RATES
+      discount_threshold = cfg.fetch("agent_discount_threshold", AGENT_DISCOUNT_THRESHOLD).to_f
+
       category    = project[:category] || "fullstack"
-      rates       = CATEGORY_RATES[category] || CATEGORY_RATES["fullstack"]
+      rates       = rates_map[category] || rates_map["fullstack"] || CATEGORY_RATES["fullstack"]
       hourly_rate = ((rates[:min] + rates[:max]) / 2.0).round
 
       # Prefer Claude's AI-assisted effort_days estimate; fall back to budget-based (already AI-adjusted)
@@ -27,7 +34,7 @@ module Bidder
 
       agent_score = (project.dig(:fit_score, :agent_buildable) ||
                      project.dig(:fit_score, "agent_buildable") || 0).to_f
-      discount    = agent_score >= AGENT_DISCOUNT_THRESHOLD ? AGENT_DISCOUNT_PERCENT : 0.0
+      discount    = agent_score >= discount_threshold ? AGENT_DISCOUNT_PERCENT : 0.0
 
       full_amount_usd = (base_amount * (1 - discount)).round
 

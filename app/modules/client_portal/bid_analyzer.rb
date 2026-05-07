@@ -2,10 +2,14 @@ module ClientPortal
   class BidAnalyzer
     include BedrockCaller
 
+    DEFAULT_RANKING = "Rank by: proposal quality and specificity, bidder rating, value for money, payment verification, realistic delivery time."
+
     def analyze(project:, bids:)
       return nil if bids.empty?
-      prompt = build_prompt(project, bids)
-      text   = call_bedrock(prompt, max_tokens: 2048)
+      cfg        = AgentConfig.for("client_portal").config
+      max_tokens = cfg.fetch("max_tokens", 2048).to_i
+      prompt     = build_prompt(project, bids, cfg)
+      text       = call_bedrock(prompt, max_tokens: max_tokens)
       parse_response(text)
     rescue Aws::BedrockRuntime::Errors::ServiceError => e
       Rails.logger.error("ClientPortal::BidAnalyzer Bedrock error: #{e.class}: #{e.message}")
@@ -17,7 +21,7 @@ module ClientPortal
 
     private
 
-    def build_prompt(project, bids)
+    def build_prompt(project, bids, cfg = {})
       budget = project[:budget_range] || {}
       skills = (project[:skills_required] || []).join(", ")
 
@@ -64,8 +68,7 @@ module ClientPortal
           ]
         }
 
-        Rank by: proposal quality and specificity, bidder rating, value for money,
-        payment verification, realistic delivery time.
+        #{cfg["ranking_criteria"].presence || DEFAULT_RANKING}
       PROMPT
     end
 
