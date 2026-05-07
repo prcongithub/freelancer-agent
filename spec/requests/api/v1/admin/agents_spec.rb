@@ -39,6 +39,13 @@ RSpec.describe "Api::V1::Admin::Agents", type: :request do
       expect(json["agent"]["config"]["threshold"]).to eq(75)
       expect(AgentConfig.for("scanner").config["threshold"]).to eq(75)
     end
+
+    it "returns 404 for unknown agent" do
+      patch "/api/v1/admin/agents/unknown",
+            params: { config: {} }.to_json,
+            headers: admin_headers.merge("Content-Type" => "application/json")
+      expect(response).to have_http_status(:not_found)
+    end
   end
 
   def json

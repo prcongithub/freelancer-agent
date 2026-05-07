@@ -4,25 +4,29 @@ module Api
       class AgentsController < ApplicationController
         before_action { require_role!(:super_admin) }
 
-        ALLOWED_AGENTS = AgentConfig::AGENTS.freeze
-
         def index
-          configs = ALLOWED_AGENTS.map do |agent|
+          configs = AgentConfig::AGENTS.map do |agent|
             serialize(AgentConfig.for(agent))
           end
           render json: { agents: configs }
         end
 
         def show
-          return render json: { error: "Unknown agent" }, status: :not_found unless ALLOWED_AGENTS.include?(params[:agent])
+          return render json: { error: "Unknown agent" }, status: :not_found unless AgentConfig::AGENTS.include?(params[:agent])
           render json: { agent: serialize(AgentConfig.for(params[:agent])) }
         end
 
         def update
-          return render json: { error: "Unknown agent" }, status: :not_found unless ALLOWED_AGENTS.include?(params[:agent])
+          return render json: { error: "Unknown agent" }, status: :not_found unless AgentConfig::AGENTS.include?(params[:agent])
           cfg = AgentConfig.for(params[:agent])
-          cfg.update!(config: params.require(:config).to_unsafe_h)
-          render json: { agent: serialize(cfg) }
+          new_config = params.require(:config).to_unsafe_h
+          if cfg.update(config: new_config)
+            render json: { agent: serialize(cfg) }
+          else
+            render json: { error: cfg.errors.full_messages.join(", ") }, status: :unprocessable_entity
+          end
+        rescue ActionController::ParameterMissing
+          render json: { error: "config param is required" }, status: :unprocessable_entity
         end
 
         private
