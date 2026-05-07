@@ -38,6 +38,7 @@ const AGENT_FIELDS: Record<string, FieldDef[]> = {
     { key: 'proposal_temperature',     label: 'Proposal Temperature',     type: 'number',   min: 0, max: 1, step: 0.05 },
   ],
   prototyper: [
+    { key: 'system_prompt',  label: 'System Prompt',  type: 'markdown', hint: 'Opening instruction sent to Claude for prototype generation' },
     { key: 'category_hints', label: 'Category Hints', type: 'json',   hint: 'JSON: { "frontend": "...", "fullstack": "...", ... }' },
     { key: 'max_tokens',     label: 'Max Tokens',     type: 'number', min: 1000, max: 16000 },
     { key: 'temperature',    label: 'Temperature',    type: 'number', min: 0, max: 1, step: 0.05 },
@@ -163,7 +164,7 @@ export default function AdminAgentConfig() {
       <div className="flex-1 min-w-0">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight capitalize">
-            {agent.replace('_', ' ')} Agent
+            {agent.replace(/_/g, ' ')} Agent
           </h1>
           <p className="text-sm text-slate-500 mt-1">Changes take effect on the next job run.</p>
         </div>

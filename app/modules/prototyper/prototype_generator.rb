@@ -2,6 +2,8 @@ module Prototyper
   class PrototypeGenerator
     include BedrockCaller
 
+    DEFAULT_SYSTEM_PROMPT = "You are building a working prototype for a Freelancer.com client.\nReturn ONLY a complete, self-contained HTML file. No explanation, no markdown, no code fences.".freeze
+
     CATEGORY_HINTS = {
       "frontend"      => "Build a full UI with working navigation, multiple pages/views, and all data operations wired to the API.",
       "fullstack"     => "Build a full UI with working navigation, multiple pages/views, and all data operations wired to the API.",
@@ -63,10 +65,10 @@ module Prototyper
       skills        = (project_data[:skills_required] || []).join(", ")
       hints         = category_hints(cfg)
       category_hint = hints[category] || hints["fullstack"] || CATEGORY_HINTS["fullstack"]
+      preamble      = cfg.fetch("system_prompt", DEFAULT_SYSTEM_PROMPT)
 
       <<~PROMPT
-        You are building a working prototype for a Freelancer.com client.
-        Return ONLY a complete, self-contained HTML file. No explanation, no markdown, no code fences.
+        #{preamble}
 
         PROJECT:
         Title: #{project_data[:title]}

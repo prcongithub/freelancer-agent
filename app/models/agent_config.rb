@@ -106,6 +106,7 @@ class AgentConfig
       "proposal_temperature" => 0.7
     },
     "prototyper" => {
+      "system_prompt" => "You are building a working prototype for a Freelancer.com client.\nReturn ONLY a complete, self-contained HTML file. No explanation, no markdown, no code fences.",
       "category_hints" => {
         "frontend"      => "Build a full UI with working navigation, multiple pages/views, and all data operations wired to the API.",
         "fullstack"     => "Build a full UI with working navigation, multiple pages/views, and all data operations wired to the API.",
