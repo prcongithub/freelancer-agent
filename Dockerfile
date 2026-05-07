@@ -1,6 +1,6 @@
 FROM ruby:3.4-slim-bookworm
 
-RUN apt-get update -qq && apt-get install -y build-essential libcurl4-openssl-dev git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -qq && apt-get install -y build-essential libcurl4-openssl-dev libyaml-dev git && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

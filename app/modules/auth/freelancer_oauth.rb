@@ -1,7 +1,7 @@
 # app/modules/auth/freelancer_oauth.rb
 module Auth
   class FreelancerOAuth
-    AUTH_URL      = "https://accounts.freelancer.com/oauth2/authorize"
+    AUTH_URL      = "https://www.freelancer.com/oauth2/authorize"
     TOKEN_URL     = "https://accounts.freelancer.com/oauth2/token"
     USERINFO_URL  = "https://www.freelancer.com/api/users/0.1/self"
 

@@ -15,23 +15,68 @@ import AdminStats from './pages/admin/AdminStats';
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles: string[] }) {
   const { user, isLoading } = useAuth();
-  if (isLoading) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (isLoading) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="flex items-center gap-3 text-slate-400">
+        <div className="animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full" />
+        <span className="text-sm font-medium">Loading…</span>
+      </div>
+    </div>
+  );
   if (!user) return <Navigate to="/login" replace />;
   if (!roles.includes(user.role)) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
+function Logo() {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-sm">
+        <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M2 11 L6 6 L9 9 L13 3" />
+          <circle cx="13" cy="3" r="1.5" fill="white" stroke="none" />
+        </svg>
+      </div>
+      <span className="font-bold text-sm text-slate-900 tracking-tight">PitchSignal</span>
+    </div>
+  );
+}
+
+function NavItem({ to, label, end }: { to: string; label: string; end?: boolean }) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) =>
+        isActive
+          ? 'px-3 py-1.5 rounded-lg text-sm font-semibold text-indigo-600 bg-indigo-50'
+          : 'px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors'
+      }
+    >
+      {label}
+    </NavLink>
+  );
+}
+
 function FreelancerNav() {
   const { logout } = useAuth();
-  const links: [string, string, boolean][] = [['/', 'Dashboard', true], ['/projects', 'Projects', false], ['/bids', 'Bids', false], ['/settings', 'Settings', false]];
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
-        <span className="font-bold text-gray-900 mr-4">PitchSignal</span>
-        {links.map(([to, label, end]) => (
-          <NavLink key={to} to={to} end={end} className={({ isActive }) => isActive ? 'font-semibold text-blue-600' : 'text-gray-600 hover:text-gray-900'}>{label}</NavLink>
-        ))}
-        <button onClick={logout} className="ml-auto text-sm text-gray-500 hover:text-gray-900">Logout</button>
+    <nav className="bg-white border-b border-slate-200 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-2">
+        <Logo />
+        <div className="w-px h-5 bg-slate-200 mx-2" />
+        <div className="flex items-center gap-0.5">
+          <NavItem to="/" label="Dashboard" end />
+          <NavItem to="/projects" label="Projects" />
+          <NavItem to="/bids" label="Bids" />
+          <NavItem to="/settings" label="Settings" />
+        </div>
+        <button
+          onClick={logout}
+          className="ml-auto text-xs font-medium text-slate-400 hover:text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+        >
+          Logout
+        </button>
       </div>
     </nav>
   );
@@ -40,11 +85,17 @@ function FreelancerNav() {
 function ClientNav() {
   const { logout } = useAuth();
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
-        <span className="font-bold text-gray-900 mr-4">PitchSignal</span>
-        <NavLink to="/client/projects" className={({ isActive }) => isActive ? 'font-semibold text-blue-600' : 'text-gray-600 hover:text-gray-900'}>My Projects</NavLink>
-        <button onClick={logout} className="ml-auto text-sm text-gray-500 hover:text-gray-900">Logout</button>
+    <nav className="bg-white border-b border-slate-200 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-2">
+        <Logo />
+        <div className="w-px h-5 bg-slate-200 mx-2" />
+        <NavItem to="/client/projects" label="My Projects" />
+        <button
+          onClick={logout}
+          className="ml-auto text-xs font-medium text-slate-400 hover:text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+        >
+          Logout
+        </button>
       </div>
     </nav>
   );
@@ -53,12 +104,21 @@ function ClientNav() {
 function AdminNav() {
   const { logout } = useAuth();
   return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-6">
-        <span className="font-bold text-gray-900 mr-4">PitchSignal — Admin</span>
-        <NavLink to="/admin/users" className={({ isActive }) => isActive ? 'font-semibold text-blue-600' : 'text-gray-600 hover:text-gray-900'}>Users</NavLink>
-        <NavLink to="/admin/stats" className={({ isActive }) => isActive ? 'font-semibold text-blue-600' : 'text-gray-600 hover:text-gray-900'}>Stats</NavLink>
-        <button onClick={logout} className="ml-auto text-sm text-gray-500 hover:text-gray-900">Logout</button>
+    <nav className="bg-white border-b border-slate-200 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-2">
+        <Logo />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 ml-1">
+          Admin
+        </span>
+        <div className="w-px h-5 bg-slate-200 mx-2" />
+        <NavItem to="/admin/users" label="Users" />
+        <NavItem to="/admin/stats" label="Stats" />
+        <button
+          onClick={logout}
+          className="ml-auto text-xs font-medium text-slate-400 hover:text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+        >
+          Logout
+        </button>
       </div>
     </nav>
   );
@@ -66,9 +126,9 @@ function AdminNav() {
 
 function AppLayout({ nav, children }: { nav: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       {nav}
-      <main className="max-w-7xl mx-auto px-4 py-6">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">{children}</main>
     </div>
   );
 }

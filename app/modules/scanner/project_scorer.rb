@@ -50,31 +50,32 @@ module Scanner
     private
 
     def score_skill_match(project)
+      # Only match against skills_required — description text is too noisy
       skills_text = (project[:skills_required] || []).map(&:downcase).join(" ")
-      desc_text = "#{project[:title]} #{project[:description]}".downcase
-      combined = "#{skills_text} #{desc_text}"
-
       all_keywords = SKILL_KEYWORDS.values.flatten
-      matches = all_keywords.count { |kw| combined.include?(kw) }
-
-      [(matches.to_f / 5 * 100).round, 100].min
+      matches = all_keywords.count { |kw| skills_text.include?(kw) }
+      [(matches.to_f / 4 * 100).round, 100].min
     end
 
     def score_budget(project)
-      budget = project.dig(:budget_range, :max) || 0
-      return 20 if budget < 100
-      return 50 if budget < 500
-      return 70 if budget < 1000
-      return 85 if budget < 5000
+      budget_usd = CurrencyConverter.budget_max_usd(project[:budget_range] || {})
+      return 20 if budget_usd < 100
+      return 50 if budget_usd < 500
+      return 70 if budget_usd < 1000
+      return 85 if budget_usd < 5000
       100
     end
 
     def score_scope_clarity(project)
       desc = "#{project[:title]} #{project[:description]}"
-      length_score = [[desc.length / 10, 50].min, 0].max
-      has_requirements = desc.match?(/must|should|need|require|feature/i) ? 30 : 0
-      has_tech = (project[:skills_required] || []).length >= 2 ? 20 : 0
-      [length_score + has_requirements + has_tech, 100].min
+      # Length: up to 60 points (600+ chars = full marks)
+      length_score = [[desc.length / 10, 60].min, 0].max
+      # Tech skills: 40 points if 2+ skills match our known keyword set
+      skills_text = (project[:skills_required] || []).map(&:downcase).join(" ")
+      all_keywords = SKILL_KEYWORDS.values.flatten
+      tech_skill_count = all_keywords.count { |kw| skills_text.include?(kw) }
+      has_tech_skills = tech_skill_count >= 2 ? 40 : (tech_skill_count == 1 ? 20 : 0)
+      [length_score + has_tech_skills, 100].min
     end
 
     def score_agent_buildable(project)

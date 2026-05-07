@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchProjects, approveBid, rejectProject } from '../api/client';
 import type { Project } from '../types/api';
+import { StatusBadge, PageLoader, PageError } from './Dashboard';
 
 const STATUSES = ['', 'discovered', 'bid_sent', 'shortlisted', 'won', 'lost'];
 
@@ -51,13 +52,16 @@ export default function Projects() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Projects</h1>
+      <div className="flex justify-between items-center mb-7">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Projects</h1>
+          <p className="text-sm text-slate-500 mt-1">Opportunities discovered and in your pipeline.</p>
+        </div>
         <select
           aria-label="Filter by status"
           value={filter}
           onChange={e => setFilter(e.target.value)}
-          className="border rounded px-3 py-1.5 text-sm bg-white"
+          className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         >
           {STATUSES.map(s => (
             <option key={s} value={s}>
@@ -68,18 +72,20 @@ export default function Projects() {
       </div>
 
       {actionError && (
-        <div className="mb-4 px-4 py-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+        <div className="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
           {actionError}
         </div>
       )}
 
-      {loading && <div className="text-center py-10 text-gray-500">Loading...</div>}
-      {error   && <div className="text-center py-10 text-red-600">{error}</div>}
+      {loading && <PageLoader />}
+      {error   && <PageError message={error} />}
 
       {!loading && !error && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {projects.length === 0 ? (
-            <div className="text-center py-10 text-gray-400">No projects found.</div>
+            <div className="text-center py-16 text-slate-400 text-sm bg-white rounded-xl border border-slate-200">
+              No projects found.
+            </div>
           ) : (
             projects.map(project => (
               <ProjectCard
@@ -108,28 +114,33 @@ function ProjectCard({
   onReject:  (id: string) => void;
   pendingAction: string | null;
 }) {
+  const isPending = pendingAction === project.id;
+
   return (
-    <div className="bg-white rounded-lg border p-4">
+    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-150">
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1 min-w-0">
-          <Link to={`/projects/${project.id}`} className="font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+          <Link
+            to={`/projects/${project.id}`}
+            className="font-semibold text-slate-900 hover:text-indigo-600 transition-colors text-sm leading-snug"
+          >
             {project.title}
           </Link>
           {project.description && (
-            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{project.description}</p>
+            <p className="text-sm text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">{project.description}</p>
           )}
           {project.skills_required && project.skills_required.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
               {project.skills_required.slice(0, 6).map(skill => (
-                <span key={skill} className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">
+                <span key={skill} className="px-2 py-0.5 bg-slate-100 rounded-full text-xs text-slate-600 font-medium">
                   {skill}
                 </span>
               ))}
             </div>
           )}
-          <div className="flex gap-4 mt-2 text-sm text-gray-500">
+          <div className="flex flex-wrap gap-4 mt-2.5 text-xs text-slate-400">
             {project.budget_range && (
-              <span>
+              <span className="font-medium text-slate-600">
                 {formatBudget(project.budget_range.min, project.budget_range.max, project.budget_range.currency)}
               </span>
             )}
@@ -137,28 +148,32 @@ function ProjectCard({
               <span className="capitalize">{project.category.replace(/_/g, ' ')}</span>
             )}
             {project.fit_score && (
-              <span>Score: <strong className="text-gray-700">{project.fit_score.total}</strong>/100</span>
+              <span>
+                Score:{' '}
+                <strong className={`font-semibold ${scoreCls(project.fit_score.total)}`}>
+                  {project.fit_score.total}
+                </strong>
+                /100
+              </span>
             )}
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2 shrink-0">
-          <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${statusColor(project.status)}`}>
-            {project.status.replace(/_/g, ' ')}
-          </span>
+        <div className="flex flex-col items-end gap-2.5 shrink-0">
+          <StatusBadge status={project.status} />
           {project.status === 'discovered' && (
             <div className="flex gap-2">
               <button
                 onClick={() => onApprove(project.id)}
-                disabled={pendingAction === project.id}
-                className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isPending}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Approve Bid
+                {isPending ? '…' : 'Approve'}
               </button>
               <button
                 onClick={() => onReject(project.id)}
-                disabled={pendingAction === project.id}
-                className="px-3 py-1 bg-red-100 text-red-700 text-xs rounded hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isPending}
+                className="px-3 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 text-xs font-semibold rounded-lg border border-slate-200 hover:border-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Reject
               </button>
@@ -178,13 +193,8 @@ function formatBudget(min: number | undefined, max: number | undefined, currency
   return `${prefix}${(min ?? 0).toLocaleString()}–${prefix}${(max ?? 0).toLocaleString()}${suffix}`;
 }
 
-function statusColor(status: string): string {
-  const map: Record<string, string> = {
-    discovered:  'bg-gray-100 text-gray-700',
-    bid_sent:    'bg-blue-100 text-blue-800',
-    shortlisted: 'bg-yellow-100 text-yellow-800',
-    won:         'bg-green-100 text-green-800',
-    lost:        'bg-red-100 text-red-800',
-  };
-  return map[status] ?? 'bg-gray-100 text-gray-700';
+function scoreCls(score: number): string {
+  if (score >= 75) return 'text-emerald-600';
+  if (score >= 50) return 'text-amber-600';
+  return 'text-red-500';
 }

@@ -17,6 +17,7 @@ module Scanner
         req.params["compact"] = true
         req.params["job_details"] = true
         req.params["full_description"] = true
+        req.params["currency_code"] = "usd"
       end
 
       return [] unless response.success?
@@ -43,12 +44,22 @@ module Scanner
 
     private
 
+    def build_url(p)
+      seo_url = p["seo_url"]
+      id      = p["id"]
+      return nil unless id
+      seo_url.present? ? "https://www.freelancer.com/projects/#{seo_url}" \
+                       : "https://www.freelancer.com/projects/#{id}"
+    end
+
     def normalize_project(p)
-      owner = p["owner_details"] || {}
+      owner    = p["owner_details"] || {}
+      bids     = p["bid_stats"] || {}
+      upgrades = p["upgrades"] || {}
       {
         freelancer_id: p["id"].to_s,
         title: p["title"],
-        description: p["preview_description"] || p["description"],
+        description: p["description"] || p["preview_description"],
         budget_range: {
           min: p.dig("budget", "minimum"),
           max: p.dig("budget", "maximum"),
@@ -59,6 +70,17 @@ module Scanner
           id: p["owner_id"].to_s,
           rating: owner.dig("reputation", "entire_history", "overall")&.to_f,
           payment_verified: owner.dig("status", "payment_verified") || false
+        },
+        freelancer_url: build_url(p),
+        bid_stats: {
+          bid_count: bids["bid_count"],
+          bid_avg:   bids["bid_avg"]&.round(2)
+        },
+        upgrades: {
+          nda:      upgrades["NDA"] || false,
+          urgent:   upgrades["urgent"] || false,
+          featured: upgrades["featured"] || false,
+          sealed:   upgrades["sealed"] || false
         },
         time_submitted: p["time_submitted"]
       }

@@ -38,3 +38,5 @@
 # Ignore Kamal secrets (contains master key reference, not for git)
 /.kamal/secrets
 
+.aider*
+pitch-signal-site/node_modules/

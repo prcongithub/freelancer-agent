@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchProject, approveBid, rejectProject, analyzeProject, generatePrototype, fetchPrototype, approvePrototype, rejectPrototype } from '../api/client';
 import type { Project, ProjectAnalysis, BidRecommendation, BidStats, Prototype } from '../types/api';
+import { StatusBadge, PageLoader, PageError, scoreColor } from './Dashboard';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +22,6 @@ export default function ProjectDetail() {
     fetchProject(id)
       .then(res => {
         setProject(res.data.project);
-        // Also fetch prototype status
         fetchPrototype(id).then(r => setPrototype(r.data.prototype)).catch(() => {});
       })
       .catch(() => setError('Project not found'))
@@ -34,26 +34,20 @@ export default function ProjectDetail() {
 
   const handleApprove = async () => {
     if (!project) return;
-    setPending(true);
-    setActionError(null);
+    setPending(true); setActionError(null);
     try {
       await approveBid(project.id);
       const res = await fetchProject(project.id);
       setProject(res.data.project);
-    } catch {
-      setActionError('Failed to approve bid. Please try again.');
-    } finally {
-      setPending(false);
-    }
+    } catch { setActionError('Failed to approve bid. Please try again.'); }
+    finally   { setPending(false); }
   };
 
   const handleAnalyze = async () => {
     if (!project) return;
-    setAnalyzing(true);
-    setActionError(null);
+    setAnalyzing(true); setActionError(null);
     try {
       await analyzeProject(project.id);
-      // Poll until analysis arrives (job is async)
       let attempts = 0;
       const poll = setInterval(async () => {
         attempts++;
@@ -64,10 +58,7 @@ export default function ProjectDetail() {
           setAnalyzing(false);
         }
       }, 2000);
-    } catch {
-      setActionError('Analysis failed. Please try again.');
-      setAnalyzing(false);
-    }
+    } catch { setActionError('Analysis failed. Please try again.'); setAnalyzing(false); }
   };
 
   const handleGeneratePrototype = async () => {
@@ -76,7 +67,6 @@ export default function ProjectDetail() {
     try {
       const res = await generatePrototype(project.id);
       setPrototype(res.data.prototype);
-      // Poll until ready/failed
       const interval = setInterval(async () => {
         const r = await fetchPrototype(project.id);
         const p = r.data.prototype;
@@ -88,48 +78,31 @@ export default function ProjectDetail() {
         }
       }, 3000);
       protoPollRef.current = interval;
-    } catch {
-      setProtoLoading(false);
-      setActionError('Failed to start prototype generation.');
-    }
+    } catch { setProtoLoading(false); setActionError('Failed to start prototype generation.'); }
   };
 
   const handleApprovePrototype = async () => {
     if (!prototype) return;
-    try {
-      const res = await approvePrototype(prototype.id);
-      setPrototype(res.data.prototype);
-    } catch {
-      setActionError('Failed to approve prototype. Please try again.');
-    }
+    try { const res = await approvePrototype(prototype.id); setPrototype(res.data.prototype); }
+    catch { setActionError('Failed to approve prototype.'); }
   };
 
   const handleRejectPrototype = async () => {
     if (!prototype) return;
-    try {
-      const res = await rejectPrototype(prototype.id);
-      setPrototype(res.data.prototype);
-    } catch {
-      setActionError('Failed to reject prototype. Please try again.');
-    }
+    try { const res = await rejectPrototype(prototype.id); setPrototype(res.data.prototype); }
+    catch { setActionError('Failed to reject prototype.'); }
   };
 
   const handleReject = async () => {
     if (!project) return;
-    setPending(true);
-    setActionError(null);
-    try {
-      await rejectProject(project.id);
-      navigate('/projects');
-    } catch {
-      setActionError('Failed to reject project. Please try again.');
-    } finally {
-      setPending(false);
-    }
+    setPending(true); setActionError(null);
+    try { await rejectProject(project.id); navigate('/projects'); }
+    catch { setActionError('Failed to reject project. Please try again.'); }
+    finally { setPending(false); }
   };
 
-  if (loading) return <div className="text-center py-20 text-gray-500">Loading...</div>;
-  if (error || !project) return <div className="text-center py-20 text-red-600">{error ?? 'Not found'}</div>;
+  if (loading) return <PageLoader />;
+  if (error || !project) return <PageError message={error ?? 'Not found'} />;
 
   const fs = project.fit_score;
 
@@ -137,50 +110,48 @@ export default function ProjectDetail() {
     <div className="max-w-3xl mx-auto">
       <button
         onClick={() => navigate(-1)}
-        className="mb-4 text-sm text-gray-500 hover:text-gray-800 flex items-center gap-1"
+        className="mb-5 text-sm font-medium text-slate-400 hover:text-slate-700 flex items-center gap-1.5 transition-colors"
       >
-        ← Back
+        ← Back to Projects
       </button>
 
-      {/* Header */}
-      <div className="bg-white rounded-lg border p-6 mb-4">
-        <div className="flex justify-between items-start gap-4 mb-3">
+      {/* Header card */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 mb-4 shadow-sm">
+        <div className="flex justify-between items-start gap-4 mb-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-gray-900 leading-snug">{project.title}</h1>
+            <h1 className="text-lg font-bold text-slate-900 leading-snug">{project.title}</h1>
             {project.freelancer_url && (
               <a
                 href={project.freelancer_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-blue-500 hover:text-blue-700 hover:underline mt-0.5 inline-block"
+                className="text-xs text-indigo-500 hover:text-indigo-700 hover:underline mt-1 inline-block"
               >
                 View on Freelancer.com ↗
               </a>
             )}
           </div>
-          <span className={`shrink-0 px-2.5 py-1 rounded text-xs font-semibold capitalize ${statusColor(project.status)}`}>
-            {project.status.replace(/_/g, ' ')}
-          </span>
+          <StatusBadge status={project.status} />
         </div>
 
         {/* Meta row */}
-        <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4">
+        <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-slate-500 mb-4">
           {project.budget_range && (
-            <span>
-              💰 {formatBudget(project.budget_range.min, project.budget_range.max, project.budget_range.currency)}
+            <span className="font-semibold text-slate-700">
+              {formatBudget(project.budget_range.min, project.budget_range.max, project.budget_range.currency)}
             </span>
           )}
           {project.category && (
-            <span className="capitalize">🏷 {project.category.replace(/_/g, ' ')}</span>
+            <span className="capitalize">{project.category.replace(/_/g, ' ')}</span>
           )}
           {project.discovered_at && (
-            <span>🕐 Discovered {new Date(project.discovered_at).toLocaleDateString()}</span>
+            <span>Discovered {new Date(project.discovered_at).toLocaleDateString()}</span>
           )}
           {project.bid_at && (
-            <span>📤 Bid sent {new Date(project.bid_at).toLocaleDateString()}</span>
+            <span>Bid sent {new Date(project.bid_at).toLocaleDateString()}</span>
           )}
           {project.won_at && (
-            <span>🏆 Won {new Date(project.won_at).toLocaleDateString()}</span>
+            <span className="text-emerald-600 font-medium">Won {new Date(project.won_at).toLocaleDateString()}</span>
           )}
         </div>
 
@@ -188,43 +159,42 @@ export default function ProjectDetail() {
         {project.skills_required && project.skills_required.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             {project.skills_required.map(skill => (
-              <span key={skill} className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-700">
+              <span key={skill} className="px-2.5 py-0.5 bg-slate-100 rounded-full text-xs font-medium text-slate-600">
                 {skill}
               </span>
             ))}
           </div>
         )}
 
-        {/* Description */}
         {project.description && (
-          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+          <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
             {project.description}
           </p>
         )}
       </div>
 
-      {/* Competition & flags */}
+      {/* Competition & upgrades */}
       {(project.bid_stats?.bid_count != null || project.upgrades) && (
-        <div className="bg-white rounded-lg border p-4 mb-4 flex flex-wrap gap-6 items-center">
+        <div className="bg-white rounded-xl border border-slate-200 px-5 py-4 mb-4 shadow-sm flex flex-wrap gap-6 items-center">
           {project.bid_stats?.bid_count != null && (
             <div>
-              <p className="text-xs text-gray-500 mb-1">Competition</p>
-              <div className="flex items-baseline gap-2">
+              <p className="text-xs text-slate-400 font-medium mb-1">Competition</p>
+              <div className="flex items-baseline gap-1.5">
                 <span className={`text-2xl font-bold ${
-                  (project.bid_stats.bid_count ?? 0) > 100 ? 'text-red-600' :
-                  (project.bid_stats.bid_count ?? 0) > 40  ? 'text-yellow-600' : 'text-green-600'
+                  (project.bid_stats.bid_count ?? 0) > 100 ? 'text-red-500' :
+                  (project.bid_stats.bid_count ?? 0) > 40  ? 'text-amber-500' : 'text-emerald-600'
                 }`}>
                   {project.bid_stats.bid_count}
                 </span>
-                <span className="text-sm text-gray-500">bids</span>
+                <span className="text-sm text-slate-400">bids</span>
               </div>
               {project.bid_stats.bid_avg != null && (
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-slate-400 mt-0.5">
                   avg bid ${project.bid_stats.bid_avg.toLocaleString()}
                   {project.budget_range && (
-                    <span className={`ml-1 ${
+                    <span className={`ml-1 font-medium ${
                       project.bid_stats.bid_avg > (project.budget_range.max ?? 0)
-                        ? 'text-red-500' : 'text-green-600'
+                        ? 'text-red-500' : 'text-emerald-600'
                     }`}>
                       ({project.bid_stats.bid_avg > (project.budget_range.max ?? 0) ? 'above' : 'within'} budget)
                     </span>
@@ -234,11 +204,11 @@ export default function ProjectDetail() {
             </div>
           )}
           {project.upgrades && (
-            <div className="flex flex-wrap gap-2">
-              {project.upgrades.urgent   && <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">Urgent</span>}
-              {project.upgrades.featured && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">Featured</span>}
-              {project.upgrades.nda      && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium">NDA required</span>}
-              {project.upgrades.sealed   && <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full font-medium">Sealed bids</span>}
+            <div className="flex flex-wrap gap-1.5">
+              {project.upgrades.urgent   && <span className="px-2.5 py-0.5 bg-red-50 text-red-600 border border-red-100 text-xs font-semibold rounded-full">Urgent</span>}
+              {project.upgrades.featured && <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 text-xs font-semibold rounded-full">Featured</span>}
+              {project.upgrades.nda      && <span className="px-2.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 text-xs font-semibold rounded-full">NDA required</span>}
+              {project.upgrades.sealed   && <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold rounded-full">Sealed bids</span>}
             </div>
           )}
         </div>
@@ -246,25 +216,26 @@ export default function ProjectDetail() {
 
       {/* Fit Score */}
       {fs && (
-        <div className="bg-white rounded-lg border p-6 mb-4">
-          <h2 className="font-semibold text-gray-800 mb-4">Fit Score</h2>
-          <div className="flex items-center gap-4 mb-4">
-            <div className={`text-4xl font-bold ${scoreColor(fs.total)}`}>{fs.total}</div>
-            <div className="text-gray-400 text-sm">/ 100</div>
+        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-4 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Fit Score</h2>
+          <div className="flex items-center gap-4 mb-5">
+            <div className={`text-4xl font-bold tracking-tight ${scoreColor(fs.total)}`}>{fs.total}</div>
+            <div className="text-slate-300 text-xl font-light">/</div>
+            <div className="text-slate-400 text-sm">100</div>
             <ScoreBar value={fs.total} className="flex-1" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
             {([
-              ['Skill Match',     fs.skill_match],
-              ['Budget',         fs.budget],
-              ['Scope Clarity',  fs.scope_clarity],
-              ['Agent Buildable',fs.agent_buildable],
-              ['Client Quality', fs.client_quality],
+              ['Skill Match',      fs.skill_match],
+              ['Budget',           fs.budget],
+              ['Scope Clarity',    fs.scope_clarity],
+              ['Agent Buildable',  fs.agent_buildable],
+              ['Client Quality',   fs.client_quality],
             ] as [string, number][]).map(([label, val]) => (
               <div key={label}>
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                <div className="flex justify-between text-xs text-slate-500 mb-1">
                   <span>{label}</span>
-                  <span className="font-medium">{val}</span>
+                  <span className={`font-semibold ${scoreColor(val)}`}>{val}</span>
                 </div>
                 <ScoreBar value={val} />
               </div>
@@ -275,18 +246,17 @@ export default function ProjectDetail() {
 
       {/* Client */}
       {project.client && (
-        <div className="bg-white rounded-lg border p-6 mb-4">
-          <h2 className="font-semibold text-gray-800 mb-3">Client</h2>
-          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 mb-4 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Client</h2>
+          <div className="flex flex-wrap gap-4 text-sm text-slate-500">
             <span>ID: {project.client.id}</span>
             {project.client.rating != null && (
-              <span>⭐ {project.client.rating.toFixed(1)} / 5.0</span>
+              <span className="text-amber-600 font-medium">★ {project.client.rating.toFixed(1)} / 5.0</span>
             )}
-            {project.client.payment_verified && (
-              <span className="text-green-700">✓ Payment verified</span>
-            )}
-            {!project.client.payment_verified && (
-              <span className="text-gray-400">✗ Payment not verified</span>
+            {project.client.payment_verified ? (
+              <span className="text-emerald-600 font-medium">✓ Payment verified</span>
+            ) : (
+              <span className="text-slate-400">✗ Payment not verified</span>
             )}
           </div>
         </div>
@@ -305,17 +275,20 @@ export default function ProjectDetail() {
       {project.analysis
         ? <AnalysisPanel analysis={project.analysis} analyzedAt={project.analyzed_at} />
         : (
-          <div className="bg-white rounded-lg border border-dashed p-6 mb-4 text-center">
+          <div className="bg-white rounded-xl border border-dashed border-slate-300 p-8 mb-4 text-center">
             {analyzing ? (
-              <p className="text-sm text-gray-500">Analyzing project… this takes ~10 seconds</p>
+              <div className="flex items-center justify-center gap-3 text-slate-400">
+                <div className="animate-spin h-4 w-4 border-2 border-violet-500 border-t-transparent rounded-full" />
+                <span className="text-sm">Analyzing project… ~10 seconds</span>
+              </div>
             ) : (
               <>
-                <p className="text-sm text-gray-500 mb-3">No analysis yet</p>
+                <p className="text-sm text-slate-400 mb-4">No analysis yet</p>
                 <button
                   onClick={handleAnalyze}
-                  className="px-4 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors"
+                  className="px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
                 >
-                  Run AI Analysis
+                  Run Signal Analysis
                 </button>
               </>
             )}
@@ -332,18 +305,20 @@ export default function ProjectDetail() {
         onReject={handleRejectPrototype}
       />
 
-      {/* Actions */}
+      {/* Action error */}
       {actionError && (
-        <div className="mb-3 px-4 py-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+        <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
           {actionError}
         </div>
       )}
-      <div className="flex gap-3 flex-wrap">
+
+      {/* Actions */}
+      <div className="flex gap-3 flex-wrap pb-8">
         {project.analysis && (
           <button
             onClick={handleAnalyze}
             disabled={analyzing}
-            className="px-5 py-2 bg-purple-100 text-purple-700 text-sm rounded hover:bg-purple-200 transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-700 text-sm font-semibold rounded-xl border border-violet-100 transition-colors disabled:opacity-50"
           >
             {analyzing ? 'Re-analyzing…' : 'Re-analyze'}
           </button>
@@ -353,14 +328,14 @@ export default function ProjectDetail() {
             <button
               onClick={handleApprove}
               disabled={pending}
-              className="px-5 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm disabled:opacity-50"
             >
               Approve Bid
             </button>
             <button
               onClick={handleReject}
               disabled={pending}
-              className="px-5 py-2 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200 transition-colors disabled:opacity-50"
+              className="px-5 py-2.5 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 text-sm font-semibold rounded-xl border border-slate-200 hover:border-red-200 transition-colors disabled:opacity-50"
             >
               Reject
             </button>
@@ -371,6 +346,8 @@ export default function ProjectDetail() {
   );
 }
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
 function formatBudget(min: number | undefined, max: number | undefined, currency: string | undefined): string {
   const cur = currency ?? 'USD';
   const symbol = cur === 'USD' ? '$' : cur === 'EUR' ? '€' : cur === 'GBP' ? '£' : null;
@@ -379,93 +356,96 @@ function formatBudget(min: number | undefined, max: number | undefined, currency
   return `${prefix}${(min ?? 0).toLocaleString()}–${prefix}${(max ?? 0).toLocaleString()}${suffix}`;
 }
 
+function ScoreBar({ value, className = '' }: { value: number; className?: string }) {
+  const color = value >= 75 ? 'bg-emerald-500' : value >= 50 ? 'bg-amber-400' : 'bg-red-400';
+  return (
+    <div className={`h-1.5 bg-slate-100 rounded-full overflow-hidden ${className}`}>
+      <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${value}%` }} />
+    </div>
+  );
+}
+
+// ─── Sub-panels ─────────────────────────────────────────────────────────────
+
 function BidPanel({ rec, bidStats, aiAdvantage }: { rec: BidRecommendation; bidStats?: BidStats; aiAdvantage?: string }) {
   const avgBid = bidStats?.bid_avg;
   const aiHours = rec.estimated_hours;
   const aiDays  = Math.ceil(aiHours / 6);
+  const maxBar  = Math.max(rec.full_amount_usd, avgBid ?? 0) * 1.15;
 
   return (
-    <div className="bg-white rounded-lg border p-6 mb-4">
+    <div className="bg-white rounded-xl border border-slate-200 p-6 mb-4 shadow-sm">
       <div className="flex items-center gap-2 mb-4">
-        <h2 className="font-semibold text-gray-800">What to Bid</h2>
-        <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full font-medium">Claude Code estimate</span>
+        <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">What to Bid</h2>
+        <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 bg-violet-50 text-violet-600 border border-violet-100 rounded-full">
+          Claude Code estimate
+        </span>
       </div>
 
-      {/* AI advantage callout */}
       {(aiAdvantage || rec.ai_speedup) && (
-        <div className="mb-4 px-3 py-2 bg-purple-50 border border-purple-100 rounded-lg text-sm text-purple-800">
+        <div className="mb-5 px-4 py-3 bg-violet-50 border border-violet-100 rounded-xl text-sm text-violet-800">
           {rec.ai_speedup && rec.traditional_days && (
             <span className="font-semibold">{rec.ai_speedup}× faster with AI — {rec.traditional_days}d traditional → {aiDays}d with Claude Code. </span>
           )}
-          {aiAdvantage && <span>{aiAdvantage}</span>}
+          {aiAdvantage && <span className="text-violet-700">{aiAdvantage}</span>}
         </div>
       )}
 
-      <div className="flex flex-wrap gap-8 items-start mb-4">
-        {/* Recommended amount */}
+      <div className="flex flex-wrap gap-8 items-start mb-5">
         <div>
-          <p className="text-xs text-gray-500 mb-1">Recommended bid</p>
+          <p className="text-xs text-slate-400 font-medium mb-1.5">Recommended bid</p>
           {rec.currency !== 'USD' ? (
             <>
-              <p className="text-4xl font-bold text-gray-900">
+              <p className="text-4xl font-bold text-slate-900 tracking-tight">
                 {rec.currency} {rec.amount.toLocaleString()}
               </p>
-              <p className="text-sm text-gray-500 mt-0.5">(≈ ${rec.amount_usd.toLocaleString()} USD)</p>
+              <p className="text-sm text-slate-400 mt-0.5">≈ ${rec.amount_usd.toLocaleString()} USD</p>
             </>
           ) : (
-            <p className="text-4xl font-bold text-gray-900">${rec.amount_usd.toLocaleString()}</p>
+            <p className="text-4xl font-bold text-slate-900 tracking-tight">${rec.amount_usd.toLocaleString()}</p>
           )}
           {!rec.within_budget && (
-            <p className="text-xs text-orange-600 mt-1">
+            <p className="text-xs text-amber-600 mt-1.5 font-medium">
               Our rate (${rec.full_amount_usd.toLocaleString()}) exceeds budget — capped at max
             </p>
           )}
         </div>
 
-        {/* Breakdown */}
-        <div className="text-sm text-gray-600 space-y-1.5">
+        <div className="text-sm text-slate-500 space-y-1.5">
           <p>
-            <span className="text-gray-400">Rate:</span>{' '}
-            <strong>${rec.hourly_rate}/hr</strong>
-            <span className="text-gray-400 ml-1">(range ${rec.rate_range.min}–${rec.rate_range.max}/hr)</span>
+            <span className="text-slate-400">Rate:</span>{' '}
+            <strong className="text-slate-700 font-semibold">${rec.hourly_rate}/hr</strong>
+            <span className="text-slate-400 ml-1 text-xs">(range ${rec.rate_range.min}–${rec.rate_range.max}/hr)</span>
           </p>
           <p>
-            <span className="text-gray-400">AI-assisted effort:</span>{' '}
-            <strong>{aiHours}h</strong> / <strong>{aiDays}d</strong>
+            <span className="text-slate-400">AI-assisted effort:</span>{' '}
+            <strong className="text-slate-700 font-semibold">{aiHours}h / {aiDays}d</strong>
             {rec.traditional_days && (
-              <span className="text-gray-400 ml-1">(vs ~{rec.traditional_days}d traditional)</span>
+              <span className="text-slate-400 ml-1 text-xs">(vs ~{rec.traditional_days}d traditional)</span>
             )}
           </p>
           {rec.discount_applied > 0 && (
-            <p className="text-green-600 text-xs">
+            <p className="text-emerald-600 text-xs font-medium">
               ✓ {(rec.discount_applied * 100).toFixed(0)}% agent-buildable discount applied
             </p>
           )}
           {avgBid != null && (
             <p>
-              <span className="text-gray-400">Avg competitor bid:</span>{' '}
-              <strong className={rec.amount_usd < avgBid ? 'text-green-600' : 'text-orange-600'}>
+              <span className="text-slate-400">Avg competitor bid:</span>{' '}
+              <strong className={rec.amount_usd < avgBid ? 'text-emerald-600' : 'text-amber-600'}>
                 ${avgBid.toLocaleString()}
               </strong>
-              <span className="text-gray-400 ml-1">
-                — we're {rec.amount_usd < avgBid ? 'below' : 'above'} market avg
+              <span className="text-slate-400 ml-1 text-xs">
+                — we&apos;re {rec.amount_usd < avgBid ? 'below' : 'above'} market avg
               </span>
             </p>
           )}
         </div>
       </div>
 
-      {/* Visual bars */}
-      <div className="space-y-2 text-xs text-gray-500">
-        {(() => {
-          const max = Math.max(rec.full_amount_usd, avgBid ?? 0) * 1.15;
-          return (
-            <>
-              <BidBar label="Our bid" value={rec.amount_usd} max={max} color="bg-blue-500" />
-              {avgBid != null && <BidBar label="Avg bid" value={avgBid} max={max} color="bg-gray-300" />}
-            </>
-          );
-        })()}
+      <div className="space-y-2">
+        <BidBar label="Our bid" value={rec.amount_usd} max={maxBar} color="bg-indigo-500" />
+        {avgBid != null && <BidBar label="Avg bid" value={avgBid} max={maxBar} color="bg-slate-300" />}
       </div>
     </div>
   );
@@ -473,87 +453,85 @@ function BidPanel({ rec, bidStats, aiAdvantage }: { rec: BidRecommendation; bidS
 
 function BidBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-16 shrink-0 text-right">{label}</span>
-      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+    <div className="flex items-center gap-3 text-xs text-slate-500">
+      <span className="w-14 shrink-0 text-right font-medium">{label}</span>
+      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full`} style={{ width: `${Math.min((value / max) * 100, 100)}%` }} />
       </div>
-      <span className="w-20 shrink-0">${value.toLocaleString()}</span>
+      <span className="w-20 shrink-0 font-medium text-slate-700">${value.toLocaleString()}</span>
     </div>
   );
 }
 
 function AnalysisPanel({ analysis, analyzedAt }: { analysis: ProjectAnalysis; analyzedAt?: string }) {
-  const recColor = {
-    take:  'bg-green-100 text-green-800 border-green-200',
-    maybe: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    skip:  'bg-red-100 text-red-800 border-red-200',
-  }[analysis.recommendation] ?? 'bg-gray-100 text-gray-700';
+  const recStyles = {
+    take:  'bg-emerald-50 border-emerald-200 text-emerald-800',
+    maybe: 'bg-amber-50 border-amber-200 text-amber-800',
+    skip:  'bg-red-50 border-red-200 text-red-700',
+  }[analysis.recommendation] ?? 'bg-slate-50 border-slate-200 text-slate-700';
 
   return (
-    <div className="bg-white rounded-lg border p-6 mb-4">
+    <div className="bg-white rounded-xl border border-slate-200 p-6 mb-4 shadow-sm">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="font-semibold text-gray-800">AI Analysis</h2>
+        <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Signal Analysis</h2>
         {analyzedAt && (
-          <span className="text-xs text-gray-400">{new Date(analyzedAt).toLocaleString()}</span>
+          <span className="text-xs text-slate-400">{new Date(analyzedAt).toLocaleString()}</span>
         )}
       </div>
 
-      {/* Recommendation banner */}
-      <div className={`flex items-center gap-4 border rounded-lg px-4 py-3 mb-4 ${recColor}`}>
-        <span className="text-2xl font-bold capitalize">{analysis.recommendation}</span>
-        <div className="flex-1">
-          <p className="text-sm font-medium">{analysis.reasoning}</p>
-          <p className="text-xs mt-0.5 opacity-75">Confidence: {analysis.confidence}%</p>
+      <div className={`flex items-start gap-4 border rounded-xl px-4 py-3.5 mb-5 ${recStyles}`}>
+        <span className="text-xl font-bold capitalize shrink-0 mt-0.5">{analysis.recommendation}</span>
+        <div>
+          <p className="text-sm font-medium leading-snug">{analysis.reasoning}</p>
+          <p className="text-xs mt-1 opacity-70">Confidence: {analysis.confidence}%</p>
         </div>
       </div>
 
-      {/* Scope & effort */}
-      <div className="mb-4">
-        <p className="text-sm text-gray-700 leading-relaxed mb-3">{analysis.scope}</p>
-        <div className="flex gap-6 text-sm">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{analysis.effort_days}</div>
-            <div className="text-xs text-gray-500">working days</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{analysis.calendar_weeks}</div>
-            <div className="text-xs text-gray-500">calendar weeks</div>
-          </div>
+      <p className="text-sm text-slate-600 leading-relaxed mb-4">{analysis.scope}</p>
+
+      <div className="flex gap-6 mb-5">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-slate-900">{analysis.effort_days}</div>
+          <div className="text-xs text-slate-400 mt-0.5">working days</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-slate-900">{analysis.calendar_weeks}</div>
+          <div className="text-xs text-slate-400 mt-0.5">calendar weeks</div>
         </div>
       </div>
 
-      {/* Skill gaps */}
       {analysis.skill_gaps.length > 0 && (
-        <div className="mb-3">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Skill gaps</p>
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Skill gaps</p>
           <div className="flex flex-wrap gap-1.5">
             {analysis.skill_gaps.map(gap => (
-              <span key={gap} className="px-2 py-0.5 bg-orange-50 border border-orange-200 rounded text-xs text-orange-700">{gap}</span>
+              <span key={gap} className="px-2.5 py-0.5 bg-amber-50 border border-amber-200 rounded-full text-xs text-amber-700 font-medium">{gap}</span>
             ))}
           </div>
         </div>
       )}
 
-      {/* Unknowns */}
       {analysis.unknowns.length > 0 && (
-        <div className="mb-3">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Unknowns / needs clarification</p>
+        <div className="mb-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Needs clarification</p>
           <ul className="space-y-1">
             {analysis.unknowns.map(u => (
-              <li key={u} className="text-sm text-gray-600 flex gap-2"><span className="text-gray-400 shrink-0">?</span>{u}</li>
+              <li key={u} className="text-sm text-slate-600 flex gap-2">
+                <span className="text-slate-300 shrink-0">?</span>{u}
+              </li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* Red flags */}
       {analysis.red_flags.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Red flags</p>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Red flags</p>
           <ul className="space-y-1">
             {analysis.red_flags.map(f => (
-              <li key={f} className="text-sm text-red-600 flex gap-2"><span className="shrink-0">⚠</span>{f}</li>
+              <li key={f} className="text-sm text-red-500 flex gap-2">
+                <span className="shrink-0">⚠</span>{f}
+              </li>
             ))}
           </ul>
         </div>
@@ -572,14 +550,14 @@ function PrototypePanel({
   onReject: () => void;
 }) {
   return (
-    <div className="bg-white rounded-lg border p-6 mb-4">
+    <div className="bg-white rounded-xl border border-slate-200 p-6 mb-4 shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-semibold text-gray-800">Prototype</h2>
+        <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Prototype</h2>
         {(!prototype || prototype.status === 'rejected' || prototype.status === 'failed') && (
           <button
             onClick={onGenerate}
             disabled={loading}
-            className="px-3 py-1.5 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50"
           >
             {loading ? 'Generating…' : prototype ? 'Regenerate' : 'Generate Prototype'}
           </button>
@@ -587,13 +565,13 @@ function PrototypePanel({
       </div>
 
       {!prototype && !loading && (
-        <p className="text-sm text-gray-400">No prototype yet. Generate one to include a live demo in your bid.</p>
+        <p className="text-sm text-slate-400">No prototype yet. Generate one to include a live demo in your bid.</p>
       )}
 
       {(loading || prototype?.status === 'generating') && (
         <div className="flex items-center gap-3 py-4">
-          <div className="animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full" />
-          <p className="text-sm text-gray-500">Building prototype… ~30 seconds</p>
+          <div className="animate-spin h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full" />
+          <p className="text-sm text-slate-400">Building prototype… ~30 seconds</p>
         </div>
       )}
 
@@ -603,7 +581,7 @@ function PrototypePanel({
 
       {prototype?.status === 'ready' && prototype.public_url && (
         <div>
-          <div className="rounded border overflow-hidden mb-3" style={{ height: 320 }}>
+          <div className="rounded-xl border border-slate-200 overflow-hidden mb-4" style={{ height: 320 }}>
             <iframe
               src={prototype.public_url}
               className="w-full h-full"
@@ -616,19 +594,19 @@ function PrototypePanel({
               href={prototype.public_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-indigo-600 hover:underline"
+              className="text-sm text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
             >
               View live ↗
             </a>
             <button
               onClick={onApprove}
-              className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors"
             >
               Approve — include in bid
             </button>
             <button
               onClick={onReject}
-              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 transition-colors"
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-lg transition-colors"
             >
               Reject
             </button>
@@ -639,16 +617,12 @@ function PrototypePanel({
       {prototype?.status === 'approved' && (
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">Approved</span>
-            <span className="text-xs text-gray-400">Will be included in bid proposal</span>
+            <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-semibold rounded-full">Approved</span>
+            <span className="text-xs text-slate-400">Will be included in bid proposal</span>
           </div>
           {prototype.public_url && (
-            <a
-              href={prototype.public_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-indigo-600 hover:underline"
-            >
+            <a href={prototype.public_url} target="_blank" rel="noopener noreferrer"
+              className="text-sm text-indigo-600 hover:underline">
               {prototype.public_url}
             </a>
           )}
@@ -656,34 +630,8 @@ function PrototypePanel({
       )}
 
       {prototype?.status === 'rejected' && (
-        <p className="text-sm text-gray-400">Prototype rejected. Generate a new one.</p>
+        <p className="text-sm text-slate-400">Prototype rejected. Generate a new one.</p>
       )}
     </div>
   );
-}
-
-function ScoreBar({ value, className = '' }: { value: number; className?: string }) {
-  const color = value >= 75 ? 'bg-green-500' : value >= 50 ? 'bg-yellow-400' : 'bg-red-400';
-  return (
-    <div className={`h-1.5 bg-gray-100 rounded-full overflow-hidden ${className}`}>
-      <div className={`h-full ${color} rounded-full`} style={{ width: `${value}%` }} />
-    </div>
-  );
-}
-
-function scoreColor(score: number): string {
-  if (score >= 75) return 'text-green-600';
-  if (score >= 50) return 'text-yellow-600';
-  return 'text-red-500';
-}
-
-function statusColor(status: string): string {
-  const map: Record<string, string> = {
-    discovered:  'bg-gray-100 text-gray-700',
-    bid_sent:    'bg-blue-100 text-blue-800',
-    shortlisted: 'bg-yellow-100 text-yellow-800',
-    won:         'bg-green-100 text-green-800',
-    lost:        'bg-red-100 text-red-800',
-  };
-  return map[status] ?? 'bg-gray-100 text-gray-700';
 }

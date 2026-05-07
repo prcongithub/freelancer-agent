@@ -40,7 +40,8 @@ export default function Login() {
     try {
       const { data } = await adminLogin(adminEmail, adminPassword);
       login(data.token);
-      navigate('/admin/users', { replace: true });
+      const dest = data.role === 'super_admin' ? '/admin/users' : data.role === 'client' ? '/client/projects' : '/';
+      navigate(dest, { replace: true });
     } catch {
       setAdminError('Invalid email or password');
     } finally {
@@ -235,13 +236,13 @@ export default function Login() {
                   onClick={() => setShowAdmin(true)}
                   className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
                 >
-                  Admin login
+                  Login with password
                 </button>
               </div>
             </>
           ) : (
             <form onSubmit={handleAdminLogin} className="space-y-4">
-              <div className="text-sm font-semibold text-slate-200 mb-1">Admin Login</div>
+              <div className="text-sm font-semibold text-slate-200 mb-1">Login with Password</div>
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Email</label>
                 <input
