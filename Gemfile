@@ -25,7 +25,7 @@ gem "thruster", require: false
 gem "rack-cors"
 
 # MongoDB
-gem "mongoid", "~> 9.0"
+gem "mongoid", "~> 9.1"
 
 # Background jobs
 gem "sidekiq", "~> 7.0"

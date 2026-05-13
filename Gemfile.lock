@@ -201,7 +201,7 @@ GEM
     mongo (2.24.0)
       base64
       bson (>= 4.14.1, < 6.0.0)
-    mongoid (9.0.11)
+    mongoid (9.1.0)
       activemodel (>= 5.1, < 8.2, != 7.0.0)
       concurrent-ruby (>= 1.0.5, < 2.0)
       mongo (>= 2.18.0, < 3.0.0)
@@ -431,7 +431,7 @@ DEPENDENCIES
   faraday (~> 2.0)
   jwt (~> 2.8)
   kamal
-  mongoid (~> 9.0)
+  mongoid (~> 9.1)
   puma (>= 5.0)
   rack-cors
   rails (~> 8.1.1)
@@ -517,7 +517,7 @@ CHECKSUMS
   mini_mime (1.1.5) sha256=8681b7e2e4215f2a159f9400b5816d85e9d8c6c6b491e96a12797e798f8bccef
   minitest (6.0.6) sha256=153ea36d1d987a62942382b61075745042a2b3123b1cd48f4c3675af9cc7d6f1
   mongo (2.24.0) sha256=ff23d23157dc4a1f90f162625460d973b7ffa89ee78e6bb45a6003b3f5a67190
-  mongoid (9.0.11) sha256=1b9567e53a36863c98c3561f0e7b555fd4a3a92a487f793953be9e32c1cc21e9
+  mongoid (9.1.0) sha256=ef7b50f4c84e636850c3431bc3c92f98481f4e1d147ff06a1c21242d0b242a9e
   msgpack (1.8.0) sha256=e64ce0212000d016809f5048b48eb3a65ffb169db22238fb4b72472fecb2d732
   multipart-post (2.4.1) sha256=9872d03a8e552020ca096adadbf5e3cb1cd1cdd6acd3c161136b8a5737cdb4a8
   net-http (0.9.1) sha256=25ba0b67c63e89df626ed8fac771d0ad24ad151a858af2cc8e6a716ca4336996
